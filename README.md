@@ -42,4 +42,5 @@ El sistema es una aplicación **Node.js Stand-Alone** dockerizada que opera en d
 
 ## 📂 Documentación Técnica
 Para entender la estructura interna, los flujos de datos y la configuración de Docker, consultar:
+
 👉 [Arquitectura de Søren Mirror](./docs/architecture.md)
