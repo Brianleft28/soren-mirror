@@ -1,6 +1,6 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk'; // Asegúrate de importar chalk
-import { generateText, getAvailableModels } from './src/core/gemini-client';
+import { generateText, getAvailableModels } from './src/core/gemini-client.ts';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 dotenv.config(); // Cargar variables de entorno

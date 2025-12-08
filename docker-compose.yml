@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # 1. CEREBRO (Ollama)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: soren_brain
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - soren_network
+
+  # 2. WEB (Portfolio)
+  portfolio:
+    build:
+      context: ./portfolio
+      dockerfile: Dockerfile
+    container_name: soren_web
+    ports:
+      - "3000:3000"
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      - HOST=0.0.0.0
+    depends_on:
+      - ollama
+    networks:
+      - soren_network
+
+  # 3. CLI (Soren Mirror) - ¡Nuevo Integrante!
+  soren-cli:
+    build:
+      context: ./soren-mirror
+      dockerfile: Dockerfile
+    container_name: soren_cli
+    # Importante para que Inquirer funcione (interactividad)
+    stdin_open: true 
+    tty: true        
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+      # Si quieres usar Google, pasa la API KEY aquí o lee del .env
+      - GEMINI_API_KEY=${GEMINI_API_KEY} 
+    depends_on:
+      - ollama
+    networks:
+      - soren_network
+
+networks:
+  soren_network:
+    driver: bridge
+
+volumes:
+  ollama_data:
