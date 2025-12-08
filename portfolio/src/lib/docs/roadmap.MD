@@ -86,6 +86,23 @@ _(Las tareas no cambian, pero ahora se ejecutan contra la API que corre en Docke
 
 ---
 
+## Fase 4.5: La Consola Interactiva (Søren Public Integration)
+
+_Objetivo: Implementar una terminal web funcional que permita a los visitantes "chatear" con una versión sanitizada del asistente._
+
+- [ ] **Tarea 1: Definir la "Máscara Pública" de Søren**
+  - Crear un nuevo prompt en el backend que solo tenga acceso a datos profesionales (CV, Stack, Proyectos).
+  - Implementar reglas estrictas de privacidad (Data Loss Prevention).
+
+- [ ] **Tarea 2: Componente `Console.svelte`**
+  - Implementar listener de teclado global (`Ctrl + Ñ`).
+  - Crear interfaz visual estilo "Matrix" o terminal Linux.
+  - Conectar vía `fetch` al endpoint `/api/public-chat`.
+
+- [ ] **Tarea 3: Endpoint Público en Backend**
+  - Crear ruta `POST /public-chat` en `soren-mirror`.
+  - Rate limiting (para que no te fundan la API key de Gemini).
+
 ## Fase 5: Preparación para el Despliegue (CI/CD)
 
 _Objetivo: Configurar las herramientas y la infraestructura necesarias para la automatización._
