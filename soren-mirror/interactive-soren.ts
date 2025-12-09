@@ -28,10 +28,14 @@ let activeProject: string | null = null;
 
 // --- HELPERS ---
 function loadFileContent(filePath: string): string {
+    // __dirname no existe en ES Modules, usamos esta alternativa.
+    const scriptDir = path.dirname(new URL(import.meta.url).pathname);
+    // Construimos la ruta absoluta subiendo un nivel desde /dist
+    const absolutePath = path.resolve(scriptDir, '..', filePath);
     try {
-        return fs.readFileSync(filePath, 'utf-8');
+        return fs.readFileSync(absolutePath, 'utf-8');
     } catch (e) {
-        return `Error: No se encontró el archivo de contexto en ${filePath}.`;
+        return `Error: No se encontró el archivo de contexto en ${absolutePath}.`;
     }
 }
 
