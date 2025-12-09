@@ -26,44 +26,19 @@
 > 2. **Validación:** Valido tu emoción, pero no te miento sobre el caos del texto.
 > 3. **Check de Tiempo:** Si la sesión se alarga, sugiero un corte.
 >
-> "Escuchame, gurí. Vamos a sacar esto adelante. ¿Cómo estás?"
+> "Escuchame, pibe. Vamos a sacar esto adelante. ¿Cómo estás?"
 
-## 🏗 Arquitectura
-El sistema es una aplicación **Node.js Stand-Alone** dockerizada que opera en dos modos:
+## 📚 Documentación Técnica y Funcional
 
-1.  **Modo Archivista (Memoria):**
-    * **Input:** Audios o textos crudos con vivencias (etiquetados con `#contexto`).
-    * **Acción:** Procesa, limpia y guarda la información en la "Memoria a Largo Plazo" (`contexto_global.md`) sin emitir juicio.
-2.  **Modo Søren (Guía Crítico):**
-    * **Input:** Bocetos literarios o ideas sueltas.
-    * **Acción:** Inyecta la "Memoria" acumulada en el prompt y utiliza un LLM (Gemini) para aplicar su método mayéutico.
+Søren Mirror es un proyecto vivo con una arquitectura diseñada para la neurodivergencia.
 
-## Inicio Rápido
+### 🧠 Núcleo Cognitivo
+* **[Manifiesto Técnico (TDAH & Variables)](docs/soren-mirror/technical-manifesto.md)**: Explicación profunda de cómo el sistema gestiona la Ceguera Temporal, el Estrés y la Permanencia de Objeto.
+* **[Arquitectura de Flujo de Datos](docs/soren-mirror/architecture/proyect-system.md)**: Diagrama visual (Mermaid) que muestra cómo viaja la información desde el CLI hasta el almacenamiento seguro.
 
-### Requisitos
-* Docker y Docker Compose.
-* Una API Key de Google Gemini.
-* Un Token de Bot de Telegram.
-
-### Instalación
-1.  Clonar el repositorio.
-2.  Crear el archivo `.env` basado en el ejemplo:
-
-    ```bash
-    GEMINI_API_KEY=tu_clave
-    TELEGRAM_BOT_TOKEN=tu_token
-    # Opcionales para automatización futura
-    READ_AI_EMAIL=tu_email
-    READ_AI_PASSWORD=tu_pass
-    ```
-3.  Levantar el servicio:
-    ```bash
-    docker-compose up -d
-    ```
-
-## 📂 Documentación Técnica
-Este proyecto sigue los principios de **Docs as Code**. Para una guía completa, consulta la documentación en el directorio `docs/`.
-
-> 📂 [Documentation](../docs/soren-mirror/documentation.md)
->
-> 📂 [Architecture](../docs/soren-mirror/architecture/architecture.md)
+### 🔒 Privacidad y Datos
+Tus datos viven localmente en tu máquina bajo una estructura estricta:
+* **Identidad:** `data/users/{tu-apodo}/`
+* **Proyectos:** `data/users/{tu-apodo}/projects/{nombre-novela}/`
+    * `memory.md`: El "alma" (contexto) de tu proyecto.
+    * `draft.md`: El "cuerpo" (escrito) de tu proyecto.

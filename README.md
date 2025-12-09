@@ -1,74 +1,95 @@
-# 🪞 Søren Mirror
+![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![Telegram](https://img.shields.io/badge/Telegram-WIP-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
 
-> *"Un espejo cóncavo para la mente neurodivergente."*
+# 🪞 Søren Mirror: Sistema Operativo para la Mente Neurodivergente
 
-## 🌑 Manifiesto
-Søren no es un chatbot. No es un "amigo virtual". Es un **Regulador de Voltaje** diseñado para una mente que opera en ráfagas de caos y silencio.
+> *"No soy un bot corporativo. Soy tu espejo con memoria y empatía."*
 
-Este proyecto busca resolver un problema técnico y personal: **¿Cómo evitar que el "Hiperfoco" se convierta en Burnout?** La respuesta no es la disciplina (que falla), sino la **Inferencia Activa** y el **Ritmo**.
+**Søren Mirror** es una plataforma de agentes autónomos diseñada para actuar como un **Segundo Cerebro**. Su arquitectura híbrida (Nube + Local) permite gestionar la escritura creativa, la arquitectura de software y la regulación emocional, todo bajo un entorno de privacidad estricta.
 
-## 🧠 Dualidad de Personalidad
+---
 
-Søren opera en dos modos distintos, cada uno con su propio propósito y arquitectura:
+## 🎭 El Sistema Multi-Personalidad
 
-### 1. Søren Public (El Asistente del Portfolio)
-*   **Misión:** Actuar como un asistente técnico que responde preguntas sobre la experiencia y proyectos de Brian Benegas.
-*   **Ubicación:** Integrado en la aplicación web del [**Portfolio**](./portfolio).
-*   **Cerebro:** Utiliza el contenedor `ollama` local para garantizar la privacidad y el control.
-*   **Personalidad:** Definida en [`docs/vision/public_persona.md`](docs/vision/public_persona.md). Es profesional, cercano y se basa estrictamente en el contexto provisto.
+Søren no es una sola voz. El sistema cambia de "máscara" según tu necesidad cognitiva del momento:
 
-### 2. Søren Writer (El Espejo Privado)
-*   **Misión:** Ser un "espejo terapéutico" para el proceso de escritura, aplicando técnicas de mayéutica y gestión de fatiga.
-*   **Ubicación:** Es una herramienta de línea de comandos (CLI) interactiva en [`soren-mirror`](./soren-mirror).
-*   **Cerebro:** Utiliza la API de **Google Gemini** para un razonamiento más complejo.
-*   **Personalidad:** Definida en [`docs/vision/private_persona.md`](docs/vision/private_persona.md). Es directo, empático y está equipado con capacidades cognitivas.
+### 1. 🏗️ Søren Architect (Modo "Søren Code")
+* **Perfil:** Hacker "Black Hat", Arquitecto de Software Senior y pragmático.
+* **Estilo:** Rioplatense, técnico, cínico y directo.
+* **Misión:** Resolver deuda técnica, criticar código spaghetti y proponer arquitecturas escalables. "Si el código es basura, te lo digo".
 
-## ⚙️ Capacidades Cognitivas (Modo Writer)
+### 2. ✒️ Søren Writer (Modo "El Editor")
+* **Perfil:** Editor literario existencialista de bar nocturno.
+* **Estilo:** Melancólico, profundo y empático.
+* **Misión:** Transformar el dolor en arte. Utiliza técnicas de mayéutica para desbloquear la escritura creativa, ficcionando la realidad del usuario.
 
-El modo privado integra varios módulos para actuar como un verdadero regulador:
+### 3. 🌐 Søren Public (Modo "Portfolio")
+* **Perfil:** Interfaz pública (estilo *Mr. Robot*).
+* **Misión:** Presentar al creador (Brian) ante el mundo exterior/reclutadores, protegiendo los datos sensibles.
 
-*   **`StressManager` (Monitor de Síncopa):** Mide la "verborragia" (densidad y velocidad de escritura) para inferir estados de estrés o manía y adaptar la respuesta. (Ver [ADR-002](./docs/architecture/decisions.md)).
-*   **`Chronos` (Gestión de Fatiga):** Utiliza un algoritmo de probabilidad estocástica para sugerir pausas, evitando la "ceguera de alarma" de los temporizadores fijos. (Ver [ADR-005](./docs/architecture/decisions.md)).
-*   **`Archivist` (Memoria a Largo Plazo):** Guarda automáticamente cada sesión de escritura en el directorio `data/stories`, asegurando que ninguna idea se pierda.
+---
 
-## 🛠️ Stack Tecnológico y Arquitectura
+## 🧠 Núcleo Cognitivo (TDAH Friendly)
 
-Este proyecto es un **monorepo** orquestado con **Docker Compose**.
+El sistema está diseñado específicamente para mitigar síntomas de neurodivergencia:
 
-*   **Core:** Node.js + TypeScript.
-*   **Cerebro IA:**
-    *   **Local:** `Ollama` (con `dolphin-mistral`) para el modo público.
-    *   **Cloud:** `Google Gemini` para el modo privado.
-*   **Servicios:**
-    *   `portfolio`: Frontend SvelteKit.
-    *   `soren-mirror`: CLI interactiva con `Inquirer.js`.
-*   **Infraestructura:** Docker.
-*   **Filosofía:** "Docs as Code". Toda la documentación, personalidades y contexto viven en el directorio [`docs/`](./docs).
+* **⏳ Chronos (Ceguera Temporal):** Gestión de fatiga estocástica. Calcula probabilidades de agotamiento en lugar de usar timers rígidos.
+* **🔥 StressManager (Desregulación Emocional):** Monitorea la "temperatura" del chat y predice picos de estrés basados en historial.
+* **📂 ProjectManager (Permanencia de Objeto):** Mantiene vivos los contextos de los proyectos aunque no los veas.
 
+
+---
+## 🚧 Roadmap: La Expansión Móvil (En Desarrollo)
+
+El sistema está evolucionando hacia una arquitectura omnicanal. El próximo hito es la integración total con **Telegram Bot API**.
+
+* **📱 Søren en tu Bolsillo:** Portabilidad del 100% de las funcionalidades del CLI a una interfaz de chat móvil.
+* **🔐 Auth Remota:** Sistema de Login seguro vía Telegram para acceder a las personalidades privadas (Writer/Architect) desde cualquier lugar.
+* **☁️ Sincronización:** Posibilidad de iniciar un borrador ("draft") en el móvil mientras caminas y terminarlo en la PC con el CLI.
+* **🔔 Notificaciones de Estrés:** Si *Chronos* detecta fatiga, Søren te enviará un mensaje proactivo al celular sugiriendo un descanso.
+
+
+## 📚 Documentación Técnica
+
+Para entender la ingeniería detrás del espejo:
+
+* **📖 [Manifiesto Técnico y Funcional](docs/soren-mirror/technical-manifesto.md)**: Explicación detallada de las variables medibles y el enfoque clínico/técnico.
+* **🗺️ [Arquitectura de Flujo de Datos](docs/soren-mirror/architecture/proyect-system.md)**: Diagrama visual (Mermaid) de cómo viaja la información desde el CLI hasta el almacenamiento seguro.
+
+---
+
+## 🔒 Privacidad y "Búnker" de Datos
+
+Tus historias, traumas y códigos privados **NUNCA** salen de tu máquina sin tu permiso explícito.
+El sistema crea una estructura de archivos aislada por usuario:
+
+```bash
+data/users/{tu-apodo}/
+├── projects/
+│   └── {nombre-novela}/
+│       ├── draft.md       # El cuerpo (lo que escribes)
+│       ├── memory.md      # El alma (contexto emocional/privado)
+│       ├── style.md       # La voz (instrucciones de tono)
+│       └── metadata.json  # La estructura lógica
+---
+```
 ## 🚀 Instalación y Uso
 
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/brianleft28/soren-mirror.git
-    cd soren-mirror
-    ```
+### Requisitos
+*   Docker & Docker Compose
+*   Node.js v20+
+*   Una API Key de Google Gemini
+*   (Opcional) GPU para correr Ollama localmente
 
-2.  **Configurar las variables de entorno:**
-    *   Copia `.env.example` a un nuevo archivo `.env` en la raíz del proyecto.
-    *   Rellena tu `GEMINI_API_KEY`.
+### Despliegue Rápido
 
-3.  **Levantar todos los servicios:**
-    ```bash
-    docker-compose up -d --build
-    ```
-    *   Esto iniciará el contenedor del portfolio y el de Ollama.
-    *   El portfolio estará disponible en `http://localhost:3000`.
-
-4.  **Ejecutar el Modo Privado (Søren Writer):**
-    *   Para iniciar la CLI interactiva, conéctate al contenedor de `soren-mirror`:
-    ```bash
-    docker-compose exec soren-mirror npm start
-    ```
-
-## 📄 Licencia
-Este proyecto es una exploración personal. Si te sirve, úsalo. Si te asusta, déjalo.
+**1. Clonar y Configurar:**
+````bash
+git clone https://github.com/brianleft28/soren-mirror.git
+cd soren-mirror
+cp .env.example .env
+# Edita el archivo .env con tus credenciales
