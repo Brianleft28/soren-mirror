@@ -1,34 +1,46 @@
 import fs from 'fs';
 import path from 'path';
 
-const MEMORY_FILE = path.join(process.cwd(), 'data', 'global_context.md');
-
-// Aseguramos que exista el archivo
-if (!fs.existsSync(path.dirname(MEMORY_FILE))) {
-    fs.mkdirSync(path.dirname(MEMORY_FILE), { recursive: true });
-}
+const USERS_DIR = path.join(process.cwd(), 'data', 'users');
 
 export class GlobalMemory {
-    /**
-     * Registra cada interacción en el "Cerebro Global".
-     * Esto es lo que leerá la IA para entender tu evolución.
-     */
-    static appendInteraction(role: 'USER' | 'SØREN' | 'SYSTEM', content: string) {
-        const timestamp = new Date().toISOString();
-        const entry = `\n[${timestamp}] **${role}**: ${content}\n`;
+    private userId: string;
+    private filePath: string;
+
+    constructor(userId: string) {
+        this.userId = userId;
+        this.filePath = path.join(USERS_DIR, `${userId}.md`);
         
-        fs.appendFileSync(MEMORY_FILE, entry);
+        // Si no existe, lo crea con un encabezado
+        if (!fs.existsSync(this.filePath)) {
+            const header = `# Memoria Neural de: ${userId}\nCreado: ${new Date().toISOString()}\n\n`;
+            fs.writeFileSync(this.filePath, header);
+        }
     }
 
     /**
-     * Obtiene el contexto reciente (Rolling Window).
-     * No podemos pasarle 1GB de texto, así que tomamos los últimos X caracteres.
+     * Escribe una interacción en el archivo del usuario específico.
      */
-    static getRecentHistory(chars: number = 8000): string {
-        if (!fs.existsSync(MEMORY_FILE)) return "";
-        
-        const fullContent = fs.readFileSync(MEMORY_FILE, 'utf-8');
-        // Si es muy largo, cortamos el final; si es corto, lo devolvemos todo.
-        return fullContent.length > chars ? "..." + fullContent.slice(-chars) : fullContent;
+    public appendInteraction(role: 'USER' | 'SØREN', content: string): void {
+        const timestamp = new Date().toLocaleTimeString();
+        const entry = `\n[${timestamp}] **${role}**: ${content}\n`;
+        try {
+            fs.appendFileSync(this.filePath, entry, 'utf-8');
+        } catch (error) {
+            console.error("❌ Error escribiendo memoria:", error);
+        }
+    }
+
+    /**
+     * Recupera el contexto de ESTE usuario.
+     */
+    public getRecentHistory(charLimit: number = 5000): string {
+        if (!fs.existsSync(this.filePath)) return "";
+        try {
+            const content = fs.readFileSync(this.filePath, 'utf-8');
+            return content.length > charLimit ? "..." + content.slice(-charLimit) : content;
+        } catch (error) {
+            return "";
+        }
     }
 }
