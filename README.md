@@ -1,24 +1,65 @@
-# Repositorio Principal
+# 🪞 Søren Mirror
 
-Este espacio de trabajo contiene varios proyectos relacionados:
+> *"Un espejo cóncavo para la mente neurodivergente."*
 
-- **[`portfolio/`](./portfolio/)**: Mi portafolio personal.
-- **[`soren-mirror/`](./soren-mirror/)**: Un agente de IA diseñado como un "Segundo Cerebro".
+## 🌑 Manifiesto
+Søren no es un chatbot. No es un "amigo virtual".
+Es un **Regulador de Voltaje** diseñado para una mente que opera en ráfagas de caos y silencio.
 
-Para más detalles sobre cada proyecto, consulta el archivo `README.md` dentro de su respectivo directorio.
+Este proyecto busca resolver un problema técnico: **¿Cómo evitar que el "Hiperfoco" (El Aleph) se convierta en Burnout?**
 
-## 🐳 Arquitectura Docker
+La respuesta no es la disciplina (que falla), sino la **Inferencia Activa** y el **Ritmo**.
 
-Este espacio de trabajo utiliza Docker para contenerizar y orquestar los servicios, principalmente el proyecto `soren-mirror`.
+## 🧠 Capacidades Cognitivas
 
--   **Sistema Dockerizado**: El proyecto [`soren-mirror/`](soren-mirror/) es una aplicación Node.js que se ejecuta dentro de un contenedor Docker. Esto garantiza un entorno de ejecución consistente y aislado, independientemente de la máquina donde se ejecute.
+### 1. El Monitor de Síncopa (Verborragia + Clima)
+Søren lee el ritmo de tu escritura, no solo el contenido.
+* **Si escribís rápido y denso** (alta verborragia) y tus oraciones denotan estres, se medicara en una escala. Søren infiere que estás en un estado maníaco/creativo basandose en la misma peligroso.
+* **Acción:** Interviene para sugerir una pausa antes de que se quemen los fusibles, siempre recordando que todo se guarda en memoria, que luego seguimos.
 
--   **Orquestación con Docker Compose**: El archivo `docker.compose` en la raíz del proyecto se utiliza para definir y gestionar los servicios de la aplicación. Este archivo lee la configuración de los `Dockerfile` de cada proyecto para construir las imágenes y coordinar los contenedores.
+### 2. Gestión de Fatiga Estocástica (ADR-005)
+Las alarmas fijas no funcionan con el TDAH. Las ignoramos.
+Søren utiliza un **Algoritmo de Probabilidad Creciente**.
+* A los 45 minutos: Riesgo de interrupción 0%.
+* A los 90 minutos: Riesgo de interrupción 60%.
+* A los 120 minutos: Riesgo de interrupción 100%.
+* **El truco:** Nunca sabés *exactamente* cuándo te va a mandar a dormir. Esa incertidumbre te mantiene alerta.
 
-Para iniciar los servicios, puedes usar el comando especificado en la documentación de `soren-mirror`:
+### 3. Dualidad de Personalidad
+* **Søren Public (CLI):** La máscara. Un asistente técnico que lee tu Portfolio y responde a reclutadores. Frío, eficiente, "Mr. Robot".
+* **Søren Writer (Private):** El espejo. Un editor brutal con 0% de complacencia que critica tu prosa y archiva tus vivencias traumáticas sin juzgar, pero sin mentir.
 
-```yml
-docker-compose up -d -f
-```
+## 🛠 Stack Tecnológico
 
-Este comando leerá el archivo `docker.compose`, construirá la imagen del contenedor de `soren-mirror` si aún no existe y ejecutará la aplicación en segundo plano.
+* **Core:** Node.js + TypeScript (Ejecución robusta).
+* **Cerebro:** Google Gemini 1.5 Flash (Streaming) / Ollama (Local/Privacidad).
+* **Interfaz:** `Inquirer.js` (CLI interactiva tipo hacker de los 90s).
+* **Infra:** Docker (Contenedor Stand-Alone).
+* **Memoria:** Sistema de Archivos Markdown (`Docs as Code`).
+
+## 🚀 Instalación (Para locos)
+
+1.  **Clonar el laboratorio:**
+    ```bash
+    git clone [https://github.com/brianleft28/soren-mirror.git](https://github.com/brianleft28/soren-mirror.git)
+    cd soren-mirror
+    ```
+
+2.  **Configurar las variables (Secretos):**
+    ```bash
+    cp .env.example .env
+    # Editar .env con GEMINI_API_KEY y OPENWEATHER_KEY
+    ```
+
+3.  **Encender la máquina:**
+    ```bash
+    # Modo Docker (Recomendado para aislamiento)
+    docker-compose up -d
+    
+    # Modo Manual (Para desarrollo)
+    npm install
+    npm start
+    ```
+
+## 📄 Licencia
+Este proyecto es una exploración personal. Si te sirve, usalo. Si te asusta, dejalo.

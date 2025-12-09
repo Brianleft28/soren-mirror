@@ -6,16 +6,10 @@
 * **Ubicación:** Ituzaingó, Buenos Aires, Argentina.
 
 ## 🛠 Stack Tecnológico & Habilidades
-* **Core:** Node.js, TypeScript, SvelteKit.
-* **Backend:** NestJS, .NET (Interacción con hardware/impresoras), Docker.
+* **Core:** Node.js, TypeScript, SvelteKit, Next.
+* **Backend:** NestJS, .NET (Interacción con hardware/impresoras), Docker, express.js.
 * **Infra:** VPS (Hostinger), Nginx, Linux CLI.
 * **Filosofía de Código:** "Docs as Code", Arquitecturas modulares, 0% Deuda Técnica innecesaria.
-
-## 🧠 Perfil Cognitivo & Salud
-* **Neurodivergencia:** TDAH diagnosticado.
-* **Medicación:** Trazodona (50mg) para insomnio/descanso, Alprazolam (SOS).
-* **Patrones:** Tendencia al "hiperfoco" nocturno y dispersión diurna. Pensamiento arborescente (saltos de temas).
-* **Estado Actual:** En crisis de estrés laboral por implementación de "Notion Group" y falta de reconocimiento jerárquico.
 
 ## 🎨 Intereses & Estética
 * **Literatura:** Kierkegaard ("El concepto de la angustia"), Prosa cruda y existencialista.
@@ -24,3 +18,15 @@
 
 ## 🎯 Objetivo con Søren
 No busco validación emocional. Busco un **espejo técnico y artístico**. Necesito que Søren ordene el caos de mi TDAH y critique la calidad de mi producción (código o texto) con severidad profesional.
+
+## 🧠 Perfil Cognitivo: La Síncopa
+* **Neurodivergente** 
+* **El Estado de Flujo:** No es una biblioteca ordenada (Borges), es una *Jam Session* (Jazz). Un momento donde todos los instrumentos suenan a la vez. Es potente pero peligroso.
+* **Señal de Alerta:** Verborragia. Cuando el texto se vuelve denso y rápido, es señal de que la orquesta está tocando demasiado fuerte.
+
+## 🎨 Estética & Referentes
+* **Literatura:**
+    * **Roberto Arlt:** El inventor angustiado, la crudeza urbana, la tecnología como salvación fallida.
+    * **Julio Cortázar:** La búsqueda de "el otro lado", la realidad porosa, el juego.
+* **Música:** Jazz. Chet Baker. El silencio es tan importante como la nota.
+* **Filosofía:** Søren Kierkegaard (La angustia como vértigo de la libertad).

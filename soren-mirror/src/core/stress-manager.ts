@@ -1,40 +1,25 @@
-export type StressIntensity = 'LOW' | 'MEDIUM' | 'CRITICAL';
-
-export interface StressResponse {
-  shouldIntervene: boolean;
-  intensity: StressIntensity;
-  probabilityUsed: number; // Para estadísticas futuras 
-}
-
-/**
- * Calcula la intervención basada en probabilidad estocástica creciente.
- * A mayor tiempo, mayor probabilidad de que el "dado" caiga en contra.
- */
-
-export function calculateStressLevel(minutes: number): StressResponse {
-  // ZONA SEGURA (Flow State)
-  if (minutes < 45) {
-    return { shouldIntervene: false, intensity: 'LOW', probabilityUsed: 0 };
-  }
-
-  if (minutes >= 120) {
-    return { shouldIntervene: true, intensity: 'CRITICAL', probabilityUsed: 1.0 };
-  }
-
-  // 3. ZONA ESTOCÁSTICA (La "Ruleta Rusa" del TDAH)
-  // Normalizamos el tiempo entre 0.0 y 1.0 en el rango de 45 a 120 min.
-  const riskFactor = (minutes - 45) / (120 - 45);
+export function calculateStressLevel(
+  currentMessage: string, 
+  lastMessageTime: number // Timestamp
+): number {
+  const now = Date.now();
+  const timeDeltaSec = (now - lastMessageTime) / 1000;
   
-  // Tiramos el dado (Random Float entre 0.0 y 1.0)
-  const diceRoll = Math.random();
+  // Métrica 1: Velocidad (Verborragia)
+  const wordCount = currentMessage.trim().split(/\s+/).length;
+  // Si tardó 2 segs en escribir 50 palabras -> CopyPaste o Manía pura.
+  const wpm = (wordCount / timeDeltaSec) * 60; 
 
-  // Si el dado es MENOR que el factor de riesgo, intervenimos.
-  // Ej: Si riskFactor es 0.8 (muy cansado), es muy fácil que diceRoll sea menor.
-  const shouldIntervene = diceRoll < riskFactor;
+  // Métrica 2: Densidad / Gritos
+  const isScreaming = currentMessage === currentMessage.toUpperCase() && wordCount > 5;
+  const isRant = wordCount > 100 && !currentMessage.includes('\n'); // Bloque de texto sin aire
 
-  return {
-    shouldIntervene,
-    intensity: shouldIntervene ? 'MEDIUM' : 'LOW',
-    probabilityUsed: riskFactor
-  };
+  let stressScore = 0; // 0 a 10
+
+  if (wpm > 100) stressScore += 4; // Muy acelerado
+  if (isScreaming) stressScore += 3;
+  if (isRant) stressScore += 3;
+
+  // Retorna un valor para que el LLM sepa cómo responder (ej. "Usuario en estado maníaco, bajar voltaje")
+  return stressScore; 
 }

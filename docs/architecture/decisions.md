@@ -1,24 +1,25 @@
-## 🧠 ADR-005: Gestión de Fatiga mediante Probabilidad Estocástica
+# Registro de Decisiones de Arquitectura (ADR)
 
-### Contexto
-El usuario (Brian) padece TDAH. Los sistemas tradicionales de gestión de tiempo (ej: "Pomodoro fijo de 25 min") fallan porque interrumpen el *hiperfoco* de manera arbitraria, generando frustración, o permiten sesiones de *burnout* de 4 horas sin aviso.
+## 🏗 ADR-001: Arquitectura Stand-Alone
+* **Estado:** Aceptado.
+* **Decisión:** Separar `soren-mirror` del portfolio.
+* **Motivo:** El agente requiere dependencias pesadas (Puppeteer para scraping, TensorFlow.js para futuro análisis de sentimiento local) que no deben ensuciar el frontend SvelteKit.
 
-### Decisión
-Implementar un algoritmo de **Interrupción Estocástica Creciente** en el agente Søren.
+## ⛈️ ADR-002: Inferencia de Estado "El aleph" (Síncopa)
+* **Estado:** En desarrollo.
+* **Contexto:** El autor entra en estados de hiperestimulación (verborragia extrema) que preceden al burnout.
+* **Decisión:** Implementar un **Monitor de Síncopa** que cruce dos señales en tiempo real:
+    1.  **Estres:** Datos de OpenWeatherMap (Presión baja/Tormenta = Mayor riesgo de manía).
+    2.  **Conductual:** Análisis de densidad de tokens por minuto en el input.
+* **Acción:** Si (Verborragia Alta) + (Estres) -> Activar protocolo de calma.
 
-### Definición Técnica
-En lugar de un límite de tiempo rígido (determinista), utilizamos una función de probabilidad lineal.
-- **Variable Independiente:** Tiempo de sesión ($t$).
-- **Variable Dependiente:** Probabilidad de interrupción ($P$).
-
-$$P(t) = \frac{t - 45}{120 - 45}$$
-
-Donde $t$ es el tiempo en minutos.
-
-### ¿Por qué? (Rationale)
-1.  **Mímesis Biológica:** La fatiga cognitiva no ocurre de golpe; es un degradado. El sistema imita el agotamiento progresivo de los neurotransmisores.
-2.  **Factor Sorpresa:** Al ser aleatorio (dentro de la curva de riesgo), el usuario no puede "predecir" al bot para ignorarlo. La incertidumbre genera mayor atención a la alerta cuando ocurre.
-3.  **Protección de Hiperfoco:** En la fase temprana (45-60 min), la probabilidad es baja, permitiendo que el *flow* continúe si es productivo, pero aumentando el riesgo a medida que el costo cognitivo sube.
-
-### Futuras Mediciones (Roadmap)
-Planeamos integrar **Análisis de Sentimiento** como variable ponderada. Si el usuario escribe con ira (detectada por NLP), la curva de probabilidad se acelerará ($t$ * 1.5), asumiendo que el estrés emocional agota la batería mental más rápido.
+## 🎲 ADR-005: Gestión de Fatiga mediante Probabilidad Estocástica
+* **Estado:** Aceptado (Core Feature).
+* **Contexto:** Los temporizadores fijos (Pomodoro) fallan con el TDAH porque interrumpen el flujo arbitrariamente o son ignorados por costumbre.
+* **Decisión:** Implementar un algoritmo de **Interrupción Estocástica Creciente**.
+* **Fórmula:**
+    $$P(t) = \frac{t - 45}{120 - 45}$$
+    *(Donde $t$ es el tiempo en minutos. Antes de los 45 min, la probabilidad es 0. A los 120 min, es 1.)*
+* **Rationale:**
+    1.  **Mímesis Biológica:** Imita el agotamiento progresivo de los neurotransmisores.
+    2.  **Factor Sorpresa:** La incertidumbre genera dopamina y mantiene la atención sobre la alerta. Evita la "ceguera de alarma".
