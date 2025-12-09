@@ -11,7 +11,7 @@ dotenv.config();
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-// --- 1. FUNCIÓN PARA LISTAR MODELOS GEMINI ---
+// --- FUNCIÓN PARA LISTAR MODELOS GEMINI ---
 async function listGeminiModels() {
     console.log(chalk.gray("📡 Consultando modelos disponibles en Google AI..."));
     try {
@@ -38,7 +38,7 @@ async function listGeminiModels() {
     }
 }
 
-// --- 2. GENERACIÓN CON STREAMING (Para velocidad) ---
+// --- GENERACIÓN CON STREAMING (Para velocidad) ---
 async function streamGeminiResponse(prompt: string, modelName: string, systemPrompt?: string) {
     const model = genAI.getGenerativeModel({
         model: modelName,
@@ -116,7 +116,6 @@ async function main() {
     console.log(chalk.cyan("\n📂 Contexto de la Sesión:"));
     const selectedFile = await browseFileSystem();
     
-    // --- AQUÍ ESTÁ LA CLAVE PARA LEER README REALES ---
     // Si el nodo del FileSystem tiene un 'path' real, leemos el archivo del disco.
     let technicalContext = selectedFile.content || "";
     
