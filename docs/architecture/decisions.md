@@ -23,3 +23,34 @@
 * **Rationale:**
     1.  **Mímesis Biológica:** Imita el agotamiento progresivo de los neurotransmisores.
     2.  **Factor Sorpresa:** La incertidumbre genera dopamina y mantiene la atención sobre la alerta. Evita la "ceguera de alarma".
+
+# ADR-006: Migración a Microservicio de Autenticación y Persistencia SQL
+
+## Estado
+Propuesto
+
+## Contexto
+Actualmente, Søren Mirror gestiona la identidad, los proyectos y el estrés mediante archivos planos (JSON/Markdown) en el sistema de archivos local (`/data`).
+Esto presenta limitaciones:
+1. **Concurrencia:** No es seguro para escrituras simultáneas.
+2. **Seguridad:** Las credenciales y datos sensibles están en texto plano o dependen del acceso al disco.
+3. **Reutilización:** El Portfolio Web no puede acceder a los datos del CLI fácilmente sin exponer el sistema de archivos.
+
+## Decisión
+Se decide desacoplar la lógica de persistencia y autenticación en un microservicio dedicado.
+
+### Stack Tecnológico:
+1. **Backend:** NestJS (Framework de Node.js progresivo).
+2. **Base de Datos:** MySQL 8.0 (Relacional, para usuarios, logs de estrés y metadatos de proyectos).
+3. **ORM:** Prisma o TypeORM (Para manejo de tipos seguros).
+4. **Auth:** JWT (Json Web Tokens) para sesiones stateless compartidas entre CLI y Web.
+
+## Consecuencias
+### Positivas
+* **Centralización:** Un solo lugar para gestionar usuarios y permisos.
+* **Escalabilidad:** El Portfolio y el CLI consumirán la misma API. Si mejoramos el auth, mejoran ambos.
+* **Seguridad:** Los passwords estarán hasheados (bcrypt).
+
+### Negativas
+* **Complejidad:** Requiere levantar contenedores Docker para MySQL y el Servicio NestJS.
+* **Refactor:** Hay que reescribir `ProjectManager` y `IdentityManager` en el CLI para que hagan peticiones HTTP en lugar de `fs.writeFileSync`.

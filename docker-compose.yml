@@ -1,5 +1,22 @@
 services:
-  # CEREBRO (Ollama) - AHORA AUTOMATIZADO
+  soren_db:
+    image: mysql:8.0
+    container_name: soren_mysql
+    restart: always
+    environment:
+      # 👇 Aquí ocurre la magia: Docker lee del archivo .env
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - soren_network
+
+  # CEREBRO (Ollama)
   ollama:
     image: ollama/ollama:latest
     container_name: soren_brain
@@ -7,15 +24,12 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-      #  Mapeamos el script desde carpeta al contenedor
       - ./start-ollama.sh:/start-ollama.sh
     entrypoint: ["/bin/bash", "/start-ollama.sh"]
     environment:
-      # 👇 ESTA ES LA CLAVE QUE FALTABA
       - OLLAMA_HOST=0.0.0.0
     networks:
       - soren_network
-    # Reiniciar si falla (útil si la descarga se corta la primera vez)
     restart: on-failure
 
   # WEB (Portfolio)
@@ -29,12 +43,15 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
       - HOST=0.0.0.0
+      # Si el portfolio necesita acceder a la DB también:
+      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@soren_db:3306/${MYSQL_DATABASE}
     depends_on:
       - ollama
+      - soren_db
     networks:
       - soren_network
 
-  # 3. CLI (Soren Mirror)
+  # CLI (Soren Mirror)
   soren-cli:
     build:
       context: ./soren-mirror
@@ -45,8 +62,13 @@ services:
     environment:
       - OLLAMA_HOST=http://soren_brain:11434 
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - DB_HOST=soren_db
+      - DB_USER=${MYSQL_USER}
+      - DB_PASS=${MYSQL_PASSWORD}
+      - DB_NAME=${MYSQL_DATABASE}
     depends_on:
       - ollama
+      - soren_db
     networks:
       - soren_network
 
@@ -56,3 +78,4 @@ networks:
 
 volumes:
   ollama_data:
+  mysql_data: 

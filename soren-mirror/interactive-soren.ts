@@ -2,16 +2,18 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
+import fs from 'fs';
+import path from 'path';
 
 // IMPORTS
 import { Chronos } from './src/core/chronos';
 import { Archivist } from './src/core/archivist';
 import { LocalAgent, SorenMode } from './src/core/ollama-client';
 import { getAvailableModels } from './src/core/gemini-client';
-import { IdentityManager } from './src/core/identity';
-import { authenticateUser } from './src/core/auth';           // <--- NUEVO
-import { ProjectManager } from './src/core/project-manager';  // <--- NUEVO
-import { CONNREFUSED } from 'dns';
+import { IdentityManager } from './src/core/identity';        // <--- RESTAURADO
+import { authenticateUser } from './src/core/auth';
+import { ProjectManager } from './src/core/project-manager';
+import { GlobalMemory } from './src/core/memory';             // <--- RESTAURADO
 
 dotenv.config();
 
@@ -21,7 +23,8 @@ const genAI = new GoogleGenerativeAI(API_KEY);
 let activeGeminiModel: any;
 let localBrain: LocalAgent;
 let currentPersonaMode: SorenMode = SorenMode.ARCHITECT; 
-let activeProject: string | null = null; // El proyecto literario activo
+let activeProject: string | null = null; 
+let projectNickname: string = ""; 
 
 // --- 1. SELECCIÓN DE MODELO ---
 async function selectModel() {
@@ -41,35 +44,32 @@ async function selectModel() {
         localBrain = new LocalAgent();
     }
 }
+
+// --- 2. PROCESAMIENTO HÍBRIDO ---
 async function procesarRespuestaHibrida(input: string, contextProject: string): Promise<string> {
     
     let systemInstruction = "";
 
-    // 1. DEFINIR EL OBJETIVO SEGÚN LA MÁSCARA
     switch (currentPersonaMode) {
         case SorenMode.ARCHITECT:
             systemInstruction = `
-            ROL: Eres un Arquitecto de Software Senior.
-            TAREA: Analiza el siguiente input técnico del usuario.
+            ROL: Arquitecto de Software Senior & Hacker.
+            TONO: Rioplatense, técnico, directo.
             INPUT: "${input}"
-            
-            REQUISITOS:
-            1. Detecta si hay errores de código, seguridad o malas prácticas.
-            2. Genera la solución técnica más eficiente y escalable (SOLID, Clean Arch).
-            3. NO redactes la respuesta final a no ser que te lo pidan, solo dame los puntos técnicos clave y el bloque de código corregido.
+            OBJETIVO: Solución técnica escalable. Critica si es spaghetti code.
             `;
             break;
 
         case SorenMode.WRITER:
-            // Lógica Existencial
+            // Usamos el apodo del proyecto para darle vida
             systemInstruction = `
-            CONTEXTO DEL PROYECTO:
+            CONTEXTO DEL PROYECTO ("${projectNickname}"):
             ${contextProject}
             
             INPUT USUARIO: "${input}"
             
-            OBJETIVO: Eres un editor literario existencialista. 
-            Empuja al usuario a profundizar en sus emociones. Usa el contexto del proyecto.
+            OBJETIVO: Editor literario existencialista y rioplatense.
+            Empuja al usuario a profundizar. Usa el material del contexto (memory.md).
             `;
             break;
 
@@ -83,23 +83,44 @@ async function procesarRespuestaHibrida(input: string, contextProject: string): 
 
     const promptRefinamiento = `
     TEXTO BASE: "${rawContent}"
-    
-    TU PERSONAJE: ${currentPersonaMode === SorenMode.ARCHITECT ? "Hacker Técnico y Frío" : "Escritor Profundo"}.
-    
-    TAREA:
-    Reescribe el texto base para que coincida PERFECTAMENTE con tu personaje.
-    - Si eres Hacker: Elimina toda la poesía. Sé técnico.
-    - Si eres Escritor: Hazlo emocionalmente frío.
+    TU PERSONAJE: ${currentPersonaMode}.
+    TAREA: Reescribe el texto base para que coincida con tu personaje (Argentino/Rioplatense).
     `;
 
     return await localBrain.chat(currentPersonaMode, promptRefinamiento);
 }
 
+// --- MAIN LOOP ---
 async function main() {
     console.clear();
-    console.log("🔮 SØREN MIRROR - CREATIVE SUITE (v6.0) 🔮");
+    console.log("🔮 SØREN MIRROR - CREATIVE SUITE (v6.1 Fixed) 🔮");
     
-    // 1. SELECCIÓN DE PERSONALIDAD
+    // 1. GESTIÓN DE IDENTIDAD (Necesario para saber qué carpeta de proyectos abrir)
+    const identityMgr = new IdentityManager();
+    const existingUsers = identityMgr.getExistingIdentities();
+    let currentIdentity = "";
+
+    const { loginMode } = await inquirer.prompt([{
+        type: 'list', name: 'loginMode', message: 'Identificación:',
+        choices: [
+            ...existingUsers.map(u => ({ name: `📂 ${u}`, value: u })),
+            { name: '✨ Nueva Identidad', value: 'NEW' }
+        ]
+    }]);
+
+    if (loginMode === 'NEW') {
+        const { firstPrompt } = await inquirer.prompt([{ type: 'input', name: 'firstPrompt', message: 'Prompt Inicial:' }]);
+        currentIdentity = await identityMgr.generateIdentity(firstPrompt);
+    } else {
+        currentIdentity = loginMode;
+    }
+
+    console.log(chalk.green(`🆔 Usuario activo: ${currentIdentity}`));
+
+    // INSTANCIAMOS EL GESTOR DE PROYECTOS CON LA IDENTIDAD
+    const projectManager = new ProjectManager(currentIdentity); 
+
+    // SELECCIÓN DE PERSONALIDAD
     const { personaSelected } = await inquirer.prompt([{
         type: 'list',
         name: 'personaSelected',
@@ -113,15 +134,12 @@ async function main() {
     
     currentPersonaMode = personaSelected;
 
+    // 4. LÓGICA DE PROYECTOS (Solo Writer)
     if (currentPersonaMode === SorenMode.WRITER) {
-        // A. Login
         const isAuth = await authenticateUser();
-        console.log(chalk.yellow('Verificando credenciales...'));
         if (!isAuth) process.exit(1);
 
-
-        // B. Gestión de Proyectos
-        const projects = ProjectManager.getProjects();
+        const projects = projectManager.getProjects(); // Usamos la instancia
         const { projectChoice } = await inquirer.prompt([{
             type: 'list',
             name: 'projectChoice',
@@ -133,14 +151,31 @@ async function main() {
         }]);
 
         if (projectChoice === 'NEW') {
-            const { newName } = await inquirer.prompt([{ type: 'input', name: 'newName', message: 'Título del Proyecto:' }]);
-            // Aquí podrías inyectar el texto que subiste como "semilla" inicial
-            ProjectManager.createProject(newName, "Inserte aquí fragmentos, traumas o ideas base.");
+            const { newName } = await inquirer.prompt([{ type: 'input', name: 'newName', message: 'Título:' }]);
+            const { newStyle } = await inquirer.prompt([{ type: 'input', name: 'newStyle', message: 'Estilo (ej: Jazz, Crudo):', default: 'Existencialista' }]);
+            const { newContext } = await inquirer.prompt([{ type: 'input', name: 'newContext', message: 'Contexto inicial:' }]);
+            
+            // ✅ CORRECCIÓN: Usamos 'projectManager' (instancia), NO 'ProjectManager' (clase)
+            projectManager.createProject(newName, newContext, newStyle);
             activeProject = newName;
         } else {
             activeProject = projectChoice;
         }
-        console.log(chalk.cyan(`\n📚 Contexto cargado: ${activeProject}`));
+
+        // FICCIONADOR DE NOMBRES
+        if (activeProject) {
+            console.log(chalk.gray("Bautizando proyecto..."));
+            const promptApodo = `
+            NOMBRE: "${activeProject}"
+            TAREA: Inventa un apodo literario corto y oscuro para este proyecto.
+            SOLO EL APODO.
+            `;
+            const nick = await localBrain.chat(SorenMode.RAW, promptApodo);
+            projectNickname = nick.replace(/["']/g, '').trim();
+            
+            console.log(chalk.cyan(`\n📚 Contexto cargado: ${activeProject}`));
+            console.log(chalk.magenta(`Søren Writer: "A ver qué nos dice hoy '${chalk.bold(projectNickname)}'..."`));
+        }
     }
 
     // INICIO SISTEMA
@@ -154,14 +189,14 @@ async function main() {
         if (chronos.shouldInterrupt()) break;
 
         const { prompt } = await inquirer.prompt([{
-            type: 'input', name: 'prompt', message: chalk.cyan(activeProject ? `[${activeProject}] >` : 'Vos >')
+            type: 'input', name: 'prompt', message: chalk.cyan(activeProject ? `[${projectNickname || activeProject}] >` : 'Vos >')
         }]);
 
         if (prompt.toLowerCase() === 'salir') break;
 
-        // Recuperamos contexto dinámico (El libro + notas)
+        // Recuperamos contexto usando la INSTANCIA
         const currentContext = activeProject 
-            ? ProjectManager.loadProjectContext(activeProject) 
+            ? projectManager.loadProjectContext(activeProject) 
             : "Sesión general sin proyecto.";
 
         process.stdout.write(chalk.gray("Analizando..."));
@@ -173,7 +208,8 @@ async function main() {
             console.log(chalk.magenta(`Søren: `) + respuesta);
 
             if (activeProject) {
-                ProjectManager.appendToProjectMemory(activeProject, `User: ${prompt}\nSoren: ${respuesta}`);
+                // ✅ CORRECCIÓN: Usamos la instancia
+                projectManager.appendToProjectMemory(activeProject, `User: ${prompt}\nSoren: ${respuesta}`);
             }
             chatHistory.push({ user: prompt, soren: respuesta });
 

@@ -1,61 +1,73 @@
 import fs from 'fs';
 import path from 'path';
 
-const PROJECTS_DIR = path.join(process.cwd(), 'data', 'projects');
-
-if (!fs.existsSync(PROJECTS_DIR)) {
-    fs.mkdirSync(PROJECTS_DIR, { recursive: true });
-}
+const DATA_DIR = path.join(process.cwd(), 'data', 'users');
 
 export class ProjectManager {
-    
-    // Lista las carpetas en data/projects
-    static getProjects(): string[] {
-        return fs.readdirSync(PROJECTS_DIR).filter(file => 
-            fs.statSync(path.join(PROJECTS_DIR, file)).isDirectory()
+    private userId: string;
+    private userProjectsDir: string;
+
+    constructor(userId: string) {
+        this.userId = userId;
+        this.userProjectsDir = path.join(DATA_DIR, userId, 'projects');
+        
+        // Aseguramos que exista la carpeta de proyectos DEL USUARIO
+        if (!fs.existsSync(this.userProjectsDir)) {
+            fs.mkdirSync(this.userProjectsDir, { recursive: true });
+        }
+    }
+
+    // Lista solo los proyectos de ESTE usuario
+    public getProjects(): string[] {
+        return fs.readdirSync(this.userProjectsDir).filter(file => 
+            fs.statSync(path.join(this.userProjectsDir, file)).isDirectory()
         );
     }
 
-    // Crea un nuevo entorno de trabajo
-    static createProject(projectName: string, initialContext: string = "") {
-        const dir = path.join(PROJECTS_DIR, projectName);
+    // Crea proyecto con archivo de ESTILO/FORMATO
+    public createProject(projectName: string, context: string = "", styleGuide: string = "") {
+        const dir = path.join(this.userProjectsDir, projectName);
         if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 
-        // Archivo del manuscrito
-        fs.writeFileSync(path.join(dir, 'draft.md'), `# ${projectName}\n\n(Comienza a escribir aquí...)`);
+        // 1. El Borrador (Draft)
+        fs.writeFileSync(path.join(dir, 'draft.md'), `# ${projectName}\n\n(Escribe aquí...)`);
         
-        // Archivo de contexto (memorias, ideas, fragmentos como el que subiste)
-        fs.writeFileSync(path.join(dir, 'memory.md'), initialContext || "Notas y contexto existencial del proyecto.");
+        // 2. La Memoria/Contexto (Ideas sueltas)
+        fs.writeFileSync(path.join(dir, 'memory.md'), context || "Notas del proyecto.");
+
+        // 3. EL FORMATO (Lo que pediste: El estilo que quieres lograr)
+        const defaultStyle = "Estilo: Existencialista, crudo, ritmo de jazz, oraciones cortas.";
+        fs.writeFileSync(path.join(dir, 'style_guide.md'), styleGuide || defaultStyle);
     }
 
-    // Lee todo el contenido del proyecto para dárselo a la IA
-    static loadProjectContext(projectName: string): string {
-        const dir = path.join(PROJECTS_DIR, projectName);
+    public loadProjectContext(projectName: string): string {
+        const dir = path.join(this.userProjectsDir, projectName);
         
-        const draft = fs.existsSync(path.join(dir, 'draft.md')) 
-            ? fs.readFileSync(path.join(dir, 'draft.md'), 'utf-8') 
-            : "";
-            
-        const memory = fs.existsSync(path.join(dir, 'memory.md')) 
-            ? fs.readFileSync(path.join(dir, 'memory.md'), 'utf-8') 
-            : "";
+        const draft = this.readFileSafe(path.join(dir, 'draft.md'));
+        const memory = this.readFileSafe(path.join(dir, 'memory.md'));
+        const style = this.readFileSafe(path.join(dir, 'style_guide.md'));
 
         return `
-        === PROYECTO ACTUAL: ${projectName.toUpperCase()} ===
+        === PROYECTO: ${projectName} ===
         
-        [MEMORIA / CONTEXTO / NOTAS]:
+        [GUÍA DE ESTILO / FORMATO DESEADO]:
+        ${style}
+
+        [MEMORIA Y NOTAS]:
         ${memory}
 
         [BORRADOR ACTUAL]:
-        ${draft.slice(-5000)} 
-        ( Últimos 5000 caracteres del borrador para mantener contexto )
+        ${draft.slice(-5000)}
         `;
     }
 
-    // Guarda lo que generes o discutas en el archivo de memoria del proyecto
-    static appendToProjectMemory(projectName: string, content: string) {
-        const file = path.join(PROJECTS_DIR, projectName, 'memory.md');
+    public appendToProjectMemory(projectName: string, content: string) {
+        const file = path.join(this.userProjectsDir, projectName, 'memory.md');
         const entry = `\n[${new Date().toLocaleString()}] ${content}\n`;
         fs.appendFileSync(file, entry);
+    }
+
+    private readFileSafe(path: string): string {
+        return fs.existsSync(path) ? fs.readFileSync(path, 'utf-8') : "";
     }
 }

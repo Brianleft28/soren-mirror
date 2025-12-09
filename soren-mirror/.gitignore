@@ -1,2 +1,6 @@
 .env
 node_modules/
+dist
+.env       <--- ESTO ES CRÍTICO
+.env.local
+mysql_data/
