@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "CommonJS", 
-    "moduleResolution": "node",
+    "module": "NodeNext",            
+    "moduleResolution": "NodeNext",  
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
     "outDir": "./dist",
-    "rootDir": "./src",
-    "types": ["node"]  
+    "rootDir": "./",
+    "types": ["node"]
   },
-  "include": ["src/**/*", "modules"],
+  "include": ["src/**/*", "interactive-soren.ts"],
   "exclude": ["node_modules"]
 }

@@ -9,9 +9,15 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3308:3306"  
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - soren_network
 
@@ -26,33 +32,33 @@ services:
     environment:
       - DB_HOST=soren_db
       - DB_USERNAME=${MYSQL_USER}      # Lee 'soren_user' del .env raíz
+      - DB_PORT=3306
       - DB_PASSWORD=${MYSQL_PASSWORD}  # Lee tu password larga del .env raíz
       - DB_DATABASE=${MYSQL_DATABASE}  # Lee el nombre de la base de datos del .env raíz
     depends_on:
-      - soren_db
+      soren_db:
+        condition: service_healthy
     volumes:
       # Montamos el código para desarrollo en vivo (Hot Reload)
       - ./soren-core:/usr/src/app
       - /usr/src/app/node_modules
     networks:
       - soren_network
-  # CEREBRO (Ollama)
+
+  # CEREBRO (Ollama) - Configuración solo para CPU
   ollama:
-    image: ollama/ollama:latest
+    image: ollama/ollama:latest # Imagen estándar, sin :rocm
     container_name: soren_brain
+    # SIN SECCIÓN 'devices' NI 'deploy'
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-      - ./start-ollama.sh:/start-ollama.sh
-    entrypoint: ["/bin/bash", "/start-ollama.sh"]
     environment:
       - OLLAMA_HOST=0.0.0.0
     networks:
       - soren_network
-    restart: on-failure
-
-  # WEB (Portfolio)
+    restart: unless-stopped
   portfolio:
     build:
       context: ./portfolio
@@ -61,13 +67,13 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - OLLAMA_HOST=http://ollama:11434
+      - VITE_OLLAMA_URL=http://ollama:11434/api/generate
       - HOST=0.0.0.0
       # Si el portfolio necesita acceder a la DB también:
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@soren_db:3306/${MYSQL_DATABASE}
     depends_on:
-      - ollama
       - soren_db
+      - ollama
     networks:
       - soren_network
 
@@ -79,16 +85,16 @@ services:
     container_name: soren_cli
     stdin_open: true 
     tty: true        
-    environment:
-      - OLLAMA_HOST=http://soren_brain:11434 
+    environment:  
+      - OLLAMA_HOST=http://ollama:11434
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DB_HOST=soren_db
       - DB_USER=${MYSQL_USER}
       - DB_PASS=${MYSQL_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
     depends_on:
-      - ollama
       - soren_db
+      - ollama
     networks:
       - soren_network
 

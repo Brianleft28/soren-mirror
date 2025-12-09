@@ -1,6 +1,6 @@
 // src/utils/file-browser.ts
 import inquirer from 'inquirer';
-import { FileNode, fileSystem } from '../config/file-system'; // Ajustá la ruta si hace falta
+import { FileNode, fileSystem } from '../config/file-system.js'; // Ajustá la ruta si hace falta
 
 export async function browseFileSystem(currentNode: FileNode = fileSystem): Promise<FileNode> {
     

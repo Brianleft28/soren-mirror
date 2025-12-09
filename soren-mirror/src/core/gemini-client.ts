@@ -46,6 +46,12 @@ export async function getAvailableModels(): Promise<ModelInfo[]> {
  * Genera texto usando un modelo específico y un contexto opcional.
  */
 export async function generateText(prompt: string, modelName: string = "gemini-1.5-flash", context?: string): Promise<string> {
+  if (!genAI) {
+      return "Error: El cliente de Gemini no está inicializado.";
+    }
+    try {
+        const cleanModelName = modelName.replace('models/', '');
+        const model = genAI.getGenerativeModel({ model: cleanModelName });  
   try {
     // Limpiamos el nombre del modelo si viene con el prefijo "models/"
     const cleanModelName = modelName.replace('models/', '');
