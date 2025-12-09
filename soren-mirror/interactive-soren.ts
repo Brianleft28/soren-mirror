@@ -7,48 +7,97 @@ import path from 'path';
 import { Chronos } from './src/core/chronos';
 import { Archivist } from './src/core/archivist';
 import { calculateStressLevel } from './src/core/stress-manager';
+import { getAvailableModels } from './src/core/gemini-client';
 
 dotenv.config();
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+let activeModel: any; 
 
 async function getSorenResponse(prompt: string, systemPrompt: string) {
-    const chat = model.startChat({
+    // Protección por si intentamos usarlo antes de elegir
+    if (!activeModel) throw new Error("⚠️ El modelo no ha sido inicializado.");
+
+    const chat = activeModel.startChat({
         history: [],
-        generationConfig: { maxOutputTokens: 1000 },
+        generationConfig: { maxOutputTokens: 2000 },
         systemInstruction: systemPrompt,
     });
+
     const result = await chat.sendMessage(prompt);
     return result.response.text();
 }
 
+// 👇 FUNCIÓN PARA ELEGIR CEREBRO
+async function selectModel() {
+    console.log(chalk.yellow("📡 Conectando con Google AI para ver modelos disponibles..."));
+    
+    try {
+        const models = await getAvailableModels();
+        
+        // Ordenamos para que los modelos más nuevos (1.5) salgan primero
+        const sortedModels = models.sort((a, b) => {
+             const scoreA = a.displayName.includes('1.5') ? 2 : 1;
+             const scoreB = b.displayName.includes('1.5') ? 2 : 1;
+             return scoreB - scoreA;
+        });
+
+        // Usamos Inquirer para la lista interactiva
+        const { selectedModelName } = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'selectedModelName',
+                message: '🧠 Selecciona el cerebro para esta sesión:',
+                choices: sortedModels.map(m => ({
+                    name: `${chalk.bold(m.displayName)} ${chalk.gray(`(${m.name.replace('models/', '')})`)}`,
+                    value: m.name.replace('models/', '') 
+                })),
+                pageSize: 12
+            }
+        ]);
+
+        console.log(chalk.green(`✅ Cerebro activado: ${selectedModelName}\n`));
+                activeModel = genAI.getGenerativeModel({ model: selectedModelName });
+
+    } catch (error) {
+        console.error(chalk.red("❌ Error obteniendo lista. Usando fallback (gemini-1.5-flash)."));
+        activeModel = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    }
+}
+
 async function main() {
     console.clear();
-    console.log("🔮 SØREN WRITER - MODO PRIVADO (v2) 🔮");
-    console.log("-----------------------------------------");
+    console.log("🔮 SØREN MIRROR - SYSTEM V2 🔮");
+    console.log("-------------------------------");
 
-    // INICIALIZAR MÓDULOS COGNITIVOS
-    const chronos = new Chronos();
+    // 👇 LLAMADA DE BLOQUEO (Espera a que elijas antes de seguir)
+    await selectModel();
+
     
+    // INICIALIZAR MÓDULOS COGNITIVOS
+    const chronos = new Chronos();    
     // CARGAR PERSONALIDAD "WRITER"
+    // ... (resto de tu código original: personaPath, basePersona, bucle while, etc.)
     const personaPath = path.join(__dirname, 'docs', 'vision', 'private_persona.md');
+    const stressThreshold = 7; // Umbral de estrés para activar alertas
+    
+    
+    // Solo asegúrate de copiar el resto de tu función main() aquí abajo
     const basePersona = fs.existsSync(personaPath) 
         ? fs.readFileSync(personaPath, 'utf-8') 
         : "Eres Søren, un editor brutalmente honesto.";
 
+    
     const chatHistory: { user: string, soren: string }[] = [];
     let lastMessageTime = Date.now(); 
 
     console.log(chalk.green(`\n✅ Conectado. Escribe para comenzar. ('salir' para guardar y terminar)`));
 
-    // 3. BUCLE DE CHAT CON CAPACIDADES COGNITIVAS
     while (true) {
-        // A. Check de Fatiga (Chronos)
         if (chronos.shouldInterrupt()) {
             console.log(chalk.redBright("\n\n--- ⚠️ ALERTA DE FATIGA ESTOCÁSTICA (CHRONOS) ---"));
-            console.log(chalk.yellow("Llevas mucho tiempo. Es hora de una pausa obligatoria. La sesión se guardará ahora."));
             break; 
         }
 
@@ -60,18 +109,15 @@ async function main() {
 
         if (prompt.toLowerCase() === 'salir') break;
 
-        // B. Medición de Estrés (StressManager)
         const stressScore = calculateStressLevel(prompt, lastMessageTime);
-        lastMessageTime = Date.now(); // Actualizamos el timestamp para el próximo turno
+        lastMessageTime = Date.now();
 
         let stressInstruction = "";
-        if (stressScore > 7) {
-            stressInstruction = `\n\nALERTA DE ESTRÉS ALTO (Nivel ${stressScore}/10): El usuario está escribiendo de forma maníaca o muy densa. Tu respuesta debe ser corta, directa y buscar que baje el ritmo. Haz una pregunta simple para que frene.`;
-        } else if (stressScore > 4) {
-            stressInstruction = `\n\nAVISO DE ESTRÉS MODERADO (Nivel ${stressScore}/10): El usuario está acelerado. Mantén tus respuestas concisas.`;
+        if (stressScore >= stressThreshold) {
+            stressInstruction = "\n\nNota: El usuario parece estar bajo un alto nivel de estrés. Responde con empatía y ofrece apoyo.";
+            console.log(chalk.redBright("⚠️ Nivel de estrés detectado en el usuario. Ajustando respuesta..."));
         }
-        
-        // Construimos el prompt final para el LLM
+
         const finalSystemPrompt = `${basePersona}${stressInstruction}`;
 
         try {
@@ -87,7 +133,6 @@ async function main() {
         }
     }
 
-    // 4. GUARDAR SESIÓN (Archivist)
     if (chatHistory.length > 0) {
         Archivist.saveSession(chatHistory);
     }
