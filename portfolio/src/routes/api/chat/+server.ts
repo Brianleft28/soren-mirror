@@ -83,6 +83,13 @@ export const POST: RequestHandler = async ({ request, getClientAddress }) => {
             }
         }
 
+        // --- DEBUG: ESTO TE MOSTRARÁ LO QUE "VE" OLLAMA ---
+        console.log("----------------------------------------------------");
+        console.log("🛠️ PROMPT REAL ENVIADO A OLLAMA:");
+        console.log("SYSTEM PROMPT (PRIMEROS 500 chars):", systemPrompt.substring(0, 500) + "...");
+        console.log("USER PROMPT:", prompt);
+        console.log("----------------------------------------------------");
+        // ----------
 
          // Llamada a Ollama
         const ollamaResponse = await fetch(OLLAMA_URL, {
