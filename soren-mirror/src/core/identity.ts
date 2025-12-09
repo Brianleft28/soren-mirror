@@ -1,12 +1,9 @@
 import { LocalAgent, SorenMode } from './ollama-client';
-import inquirer from 'inquirer';
-import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
 
 const USERS_DIR = path.join(process.cwd(), 'data', 'users');
 
-// Aseguramos que exista la carpeta de usuarios
 if (!fs.existsSync(USERS_DIR)) {
     fs.mkdirSync(USERS_DIR, { recursive: true });
 }
@@ -15,12 +12,9 @@ export class IdentityManager {
     private localBrain: LocalAgent;
 
     constructor() {
-        this.localBrain = new LocalAgent('dolphin-llama3'); // Usamos Dolphin para ser creativos
+        this.localBrain = new LocalAgent('dolphin-llama3');
     }
 
-    /**
-     * Lista los usuarios existentes (archivos .md en data/users)
-     */
     public getExistingIdentities(): string[] {
         if (!fs.existsSync(USERS_DIR)) return [];
         return fs.readdirSync(USERS_DIR)
@@ -28,30 +22,43 @@ export class IdentityManager {
             .map(f => f.replace('.md', ''));
     }
 
-    /**
-     * Genera un apodo hacker basado en el primer prompt del usuario.
-     */
     public async generateIdentity(firstPrompt: string): Promise<string> {
-        console.log(chalk.yellow("\n🔍 Analizando patrón de escritura para asignar identidad..."));
-
+        // Prompt más agresivo para que se calle la boca y solo dé el nombre
         const prompt = `
-        TAREA: Genera un "Hacker Nickname" de máximo 3 palabras para un usuario basado en este texto que escribió.
+        TASK: Extract a 'hacker handle' (nickname) from the user's input style.
+        USER INPUT: "${firstPrompt}"
         
-        TEXTO DEL USUARIO: "${firstPrompt}"
-        
-        REGLAS:
-        1. Formato: palabra1-palabra2-palabra3 (kebab-case).
-        2. Solo letras minúsculas y guiones.
-        3. Debe sonar misterioso, técnico o cyberpunk.
-        4. NO expliques nada. Solo devuelve el string del nombre.
+        CRITICAL RULES:
+        1. Output ONLY the nickname. NO sentences. NO "Here is the nickname".
+        2. Format: kebab-case (e.g. quantum-ghost, code-breaker).
+        3. Max length: 25 characters.
         `;
 
-        // Usamos el modo RAW o ARCHITECT para esto
-        const nickname = await this.localBrain.chat(SorenMode.ARCHITECT, prompt);
-        
-        // Limpiamos por si la IA se pone charlatana (regex para dejar solo letras y guiones)
-        const cleanName = nickname.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-        
-        return cleanName || `user-${Date.now()}`; // Fallback por si falla
+        try {
+            const rawResponse = await this.localBrain.chat(SorenMode.ARCHITECT, prompt);
+            
+            // 1. Limpieza Inteligente:
+            // Buscamos patrones de kebab-case explícitos en la respuesta
+            // Esto ayuda si la IA dice "The nickname is: cyber-punk" -> extraemos "cyber-punk"
+            const match = rawResponse.match(/\b[a-z0-9]+(?:-[a-z0-9]+){1,2}\b/i);
+            
+            let candidate = match ? match[0] : rawResponse;
+
+            // 2. Limpieza final de caracteres basura
+            candidate = candidate.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
+
+            // 3. VALIDACIÓN DE SEGURIDAD (El bozal)
+            // Si después de limpiar sigue siendo gigante (>30 chars) o vacío, usamos fallback.
+            if (!candidate || candidate.length > 30) {
+                console.warn(`⚠️ Nombre generado inválido ("${candidate.substring(0, 15)}..."). Usando fallback.`);
+                return `user-${Date.now().toString().slice(-6)}`;
+            }
+
+            return candidate;
+
+        } catch (error) {
+            console.error("Error generando identidad:", error);
+            return `anon-${Date.now().toString().slice(-6)}`;
+        }
     }
 }
