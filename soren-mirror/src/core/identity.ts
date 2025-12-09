@@ -21,44 +21,26 @@ export class IdentityManager {
             .filter(f => f.endsWith('.md'))
             .map(f => f.replace('.md', ''));
     }
-
-    public async generateIdentity(firstPrompt: string): Promise<string> {
-        // Prompt más agresivo para que se calle la boca y solo dé el nombre
+public async generateIdentity(firstPrompt: string): Promise<string> {
         const prompt = `
-        TASK: Extract a 'hacker handle' (nickname) from the user's input style.
-        USER INPUT: "${firstPrompt}"
-        
-        CRITICAL RULES:
-        1. Output ONLY the nickname. NO sentences. NO "Here is the nickname".
-        2. Format: kebab-case (e.g. quantum-ghost, code-breaker).
-        3. Max length: 25 characters.
+        TASK: Extract a hacker nickname from: "${firstPrompt}".
+        RULES: Max 15 chars. Kebab-case. NO explanations. Just the name.
         `;
 
         try {
             const rawResponse = await this.localBrain.chat(SorenMode.ARCHITECT, prompt);
             
-            // 1. Limpieza Inteligente:
-            // Buscamos patrones de kebab-case explícitos en la respuesta
-            // Esto ayuda si la IA dice "The nickname is: cyber-punk" -> extraemos "cyber-punk"
-            const match = rawResponse.match(/\b[a-z0-9]+(?:-[a-z0-9]+){1,2}\b/i);
+            // Limpieza agresiva: solo letras, números y guiones
+            let candidate = rawResponse.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
             
-            let candidate = match ? match[0] : rawResponse;
-
-            // 2. Limpieza final de caracteres basura
-            candidate = candidate.trim().toLowerCase().replace(/[^a-z0-9-]/g, '');
-
-            // 3. VALIDACIÓN DE SEGURIDAD (El bozal)
-            // Si después de limpiar sigue siendo gigante (>30 chars) o vacío, usamos fallback.
-            if (!candidate || candidate.length > 30) {
-                console.warn(`⚠️ Nombre generado inválido ("${candidate.substring(0, 15)}..."). Usando fallback.`);
-                return `user-${Date.now().toString().slice(-6)}`;
+            // Si quedó vacío o es muy largo, usamos timestamp
+            if (!candidate || candidate.length > 20 || candidate.length < 3) {
+                return `user-${Date.now().toString().slice(-4)}`; // Ejemplo: user-9821
             }
-
             return candidate;
 
         } catch (error) {
-            console.error("Error generando identidad:", error);
-            return `anon-${Date.now().toString().slice(-6)}`;
+            return `user-${Date.now().toString().slice(-4)}`;
         }
     }
 }

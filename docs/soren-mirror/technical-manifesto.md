@@ -1,5 +1,5 @@
 # 🧠 Søren Mirror: Manifiesto Técnico y Funcional
-
+## 0.1 Author: Brian Benegas
 ## 1. Visión del Producto
 **Søren Mirror** es un Sistema Operativo para la Mente Neurodivergente.
 Actúa como un "Espejo Cognitivo" y compañero de *Body Doubling* digital, diseñado para mitigar la disfunción ejecutiva mediante una arquitectura híbrida de IA (Lógica + Emoción).
@@ -30,18 +30,21 @@ El sistema ataca tres síntomas clínicos específicos mediante módulos de soft
 ## 3. Arquitectura Híbrida (Doble Núcleo)
 * **Nube (Gemini 1.5):** Procesamiento lógico pesado, análisis de estructura y generación de ideas complejas.
 * **Local (Ollama/Dolphin):** Filtro de personalidad, privacidad y "traducción" emocional (Rioplatense, Crudo).
-
 ## 4. Estructura de Datos Real (El "Búnker")
-Cada usuario tiene un entorno aislado (`Sandbox`) en disco, protegido por autenticación local:
+El sistema persiste la información en dos grandes ramas locales:
+
 ```bash
-data/users/{usuario}/
-├── projects/
-│   └── {nombre_proyecto}/
-│       ├── draft.md       # (El cuerpo de la obra)
-│       ├── memory.md      # (El alma/contexto vital y hechos reales)
-│       ├── style.md       # (La voz/tono deseado: Jazz, Crudo, etc.)
-│       └── metadata.json  # (La estructura lógica y capítulos)
-└── metrics/
+data/
+├── users/                      # BÚNKER DE IDENTIDAD Y PROYECTOS
+│   └── {usuario}/              # Carpeta protegida por Auth
+│       └── projects/
+│           └── {nombre_proyecto}/
+│               ├── draft.md    # El cuerpo de la obra
+│               ├── memory.md   # El alma (contexto emocional)
+│               ├── style.md    # La voz (tono deseado)
+│               └── metadata.json
+│
+└── metrics/                    # TELEMETRÍA GLOBAL (Anonimizada)
     └── {usuario}_stress_log.json
 ```
 ## 5. Las Personalidades (Sistema Multi-Agente)

@@ -4,7 +4,6 @@ services:
     container_name: soren_mysql
     restart: always
     environment:
-      # 👇 Aquí ocurre la magia: Docker lee del archivo .env
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
@@ -16,6 +15,27 @@ services:
     networks:
       - soren_network
 
+# NÚCLEO DE AUTH Y PERSISTENCIA
+  soren-core:
+    build:
+      context: ./soren-core
+      dockerfile: Dockerfile
+    container_name: soren_api
+    ports:
+      - "4000:3000" # Exponemos en puerto 4000 para no chocar con el portfolio
+    environment:
+      - DB_HOST=soren_db
+      - DB_USERNAME=${MYSQL_USER}      # Lee 'soren_user' del .env raíz
+      - DB_PASSWORD=${MYSQL_PASSWORD}  # Lee tu password larga del .env raíz
+      - DB_DATABASE=${MYSQL_DATABASE}  # Lee el nombre de la base de datos del .env raíz
+    depends_on:
+      - soren_db
+    volumes:
+      # Montamos el código para desarrollo en vivo (Hot Reload)
+      - ./soren-core:/usr/src/app
+      - /usr/src/app/node_modules
+    networks:
+      - soren_network
   # CEREBRO (Ollama)
   ollama:
     image: ollama/ollama:latest
