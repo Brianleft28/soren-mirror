@@ -1,7 +1,5 @@
-version: '3.8'
-
 services:
-  # 1. CEREBRO (Ollama)
+  # CEREBRO (Ollama) - AHORA AUTOMATIZADO
   ollama:
     image: ollama/ollama:latest
     container_name: soren_brain
@@ -9,10 +7,18 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+      #  Mapeamos el script desde carpeta al contenedor
+      - ./start-ollama.sh:/start-ollama.sh
+    entrypoint: ["/bin/bash", "/start-ollama.sh"]
+    environment:
+      # 👇 ESTA ES LA CLAVE QUE FALTABA
+      - OLLAMA_HOST=0.0.0.0
     networks:
       - soren_network
+    # Reiniciar si falla (útil si la descarga se corta la primera vez)
+    restart: on-failure
 
-  # 2. WEB (Portfolio)
+  # WEB (Portfolio)
   portfolio:
     build:
       context: ./portfolio
@@ -28,19 +34,17 @@ services:
     networks:
       - soren_network
 
-  # 3. CLI (Soren Mirror) - ¡Nuevo Integrante!
+  # 3. CLI (Soren Mirror)
   soren-cli:
     build:
       context: ./soren-mirror
       dockerfile: Dockerfile
     container_name: soren_cli
-    # Importante para que Inquirer funcione (interactividad)
     stdin_open: true 
     tty: true        
     environment:
-      - OLLAMA_HOST=http://ollama:11434
-      # Si quieres usar Google, pasa la API KEY aquí o lee del .env
-      - GEMINI_API_KEY=${GEMINI_API_KEY} 
+      - OLLAMA_HOST=http://soren_brain:11434 
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
       - ollama
     networks:

@@ -12,4 +12,4 @@ COPY . .
 
 # Comando por defecto (ajusta si usas ts-node o si compilas)
 # Usamos ts-node directo para desarrollo rápido
-CMD ["npx", "ts-node", "src/interactive-soren.ts"]
+CMD ["npx", "ts-node", "interactive-soren.ts"]
