@@ -1,11 +1,11 @@
-// 1. Importar el módulo 'http' y sus tipos 
+// Importar el módulo 'http' y sus tipos 
 import http, {IncomingMessage, ServerResponse} from 'http';
 
-// 2. Definir el host y el puerto
+// Definir el host y el puerto
 const host: string = '127.0.0.1';
 const port: number = 3000;
 
-// 3. Crear el servidor con tipos para req y res 
+// Crear el servidor con tipos para req y res 
 const server = http.createServer((req: IncomingMessage, res: ServerResponse) => {
     // req: IncomingMessage (Información de la solicitud entrante)
     // res: ServerResponse (Respuesta que se enviará al cliente)

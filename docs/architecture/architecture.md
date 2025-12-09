@@ -3,7 +3,7 @@
 ## 1. Visión General
 El ecosistema "Søren Mirror" se divide en dos contextos de ejecución claramente diferenciados por su propósito y nivel de privacidad.
 
-### A. Søren Public CLI (El que estamos construyendo ahora)
+### A. Søren Public CLI 
 * **Identidad:** Definida estrictamente en `docs/vision/public_persona.md`.
 * **Propósito:** Interfaz pública de terminal para reclutadores y visitantes técnicos.
 * **Comportamiento:** Profesional, técnico, levemente reservado ("Estilo Mr. Robot"). No habla de terapia ni de crisis personales profundas.

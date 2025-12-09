@@ -3,63 +3,72 @@
 > *"Un espejo cóncavo para la mente neurodivergente."*
 
 ## 🌑 Manifiesto
-Søren no es un chatbot. No es un "amigo virtual".
-Es un **Regulador de Voltaje** diseñado para una mente que opera en ráfagas de caos y silencio.
+Søren no es un chatbot. No es un "amigo virtual". Es un **Regulador de Voltaje** diseñado para una mente que opera en ráfagas de caos y silencio.
 
-Este proyecto busca resolver un problema técnico: **¿Cómo evitar que el "Hiperfoco" (El Aleph) se convierta en Burnout?**
+Este proyecto busca resolver un problema técnico y personal: **¿Cómo evitar que el "Hiperfoco" se convierta en Burnout?** La respuesta no es la disciplina (que falla), sino la **Inferencia Activa** y el **Ritmo**.
 
-La respuesta no es la disciplina (que falla), sino la **Inferencia Activa** y el **Ritmo**.
+## 🧠 Dualidad de Personalidad
 
-## 🧠 Capacidades Cognitivas
+Søren opera en dos modos distintos, cada uno con su propio propósito y arquitectura:
 
-### 1. El Monitor de Síncopa (Verborragia + Clima)
-Søren lee el ritmo de tu escritura, no solo el contenido.
-* **Si escribís rápido y denso** (alta verborragia) y tus oraciones denotan estres, se medicara en una escala. Søren infiere que estás en un estado maníaco/creativo basandose en la misma peligroso.
-* **Acción:** Interviene para sugerir una pausa antes de que se quemen los fusibles, siempre recordando que todo se guarda en memoria, que luego seguimos.
+### 1. Søren Public (El Asistente del Portfolio)
+*   **Misión:** Actuar como un asistente técnico que responde preguntas sobre la experiencia y proyectos de Brian Benegas.
+*   **Ubicación:** Integrado en la aplicación web del [**Portfolio**](./portfolio).
+*   **Cerebro:** Utiliza el contenedor `ollama` local para garantizar la privacidad y el control.
+*   **Personalidad:** Definida en [`docs/vision/public_persona.md`](docs/vision/public_persona.md). Es profesional, cercano y se basa estrictamente en el contexto provisto.
 
-### 2. Gestión de Fatiga Estocástica (ADR-005)
-Las alarmas fijas no funcionan con el TDAH. Las ignoramos.
-Søren utiliza un **Algoritmo de Probabilidad Creciente**.
-* A los 45 minutos: Riesgo de interrupción 0%.
-* A los 90 minutos: Riesgo de interrupción 60%.
-* A los 120 minutos: Riesgo de interrupción 100%.
-* **El truco:** Nunca sabés *exactamente* cuándo te va a mandar a dormir. Esa incertidumbre te mantiene alerta.
+### 2. Søren Writer (El Espejo Privado)
+*   **Misión:** Ser un "espejo terapéutico" para el proceso de escritura, aplicando técnicas de mayéutica y gestión de fatiga.
+*   **Ubicación:** Es una herramienta de línea de comandos (CLI) interactiva en [`soren-mirror`](./soren-mirror).
+*   **Cerebro:** Utiliza la API de **Google Gemini** para un razonamiento más complejo.
+*   **Personalidad:** Definida en [`docs/vision/private_persona.md`](docs/vision/private_persona.md). Es directo, empático y está equipado con capacidades cognitivas.
 
-### 3. Dualidad de Personalidad
-* **Søren Public (CLI):** La máscara. Un asistente técnico que lee tu Portfolio y responde a reclutadores. Frío, eficiente, "Mr. Robot".
-* **Søren Writer (Private):** El espejo. Un editor brutal con 0% de complacencia que critica tu prosa y archiva tus vivencias traumáticas sin juzgar, pero sin mentir.
+## ⚙️ Capacidades Cognitivas (Modo Writer)
 
-## 🛠 Stack Tecnológico
+El modo privado integra varios módulos para actuar como un verdadero regulador:
 
-* **Core:** Node.js + TypeScript (Ejecución robusta).
-* **Cerebro:** Google Gemini 1.5 Flash (Streaming) / Ollama (Local/Privacidad).
-* **Interfaz:** `Inquirer.js` (CLI interactiva tipo hacker de los 90s).
-* **Infra:** Docker (Contenedor Stand-Alone).
-* **Memoria:** Sistema de Archivos Markdown (`Docs as Code`).
+*   **`StressManager` (Monitor de Síncopa):** Mide la "verborragia" (densidad y velocidad de escritura) para inferir estados de estrés o manía y adaptar la respuesta. (Ver [ADR-002](./docs/architecture/decisions.md)).
+*   **`Chronos` (Gestión de Fatiga):** Utiliza un algoritmo de probabilidad estocástica para sugerir pausas, evitando la "ceguera de alarma" de los temporizadores fijos. (Ver [ADR-005](./docs/architecture/decisions.md)).
+*   **`Archivist` (Memoria a Largo Plazo):** Guarda automáticamente cada sesión de escritura en el directorio `data/stories`, asegurando que ninguna idea se pierda.
 
-## 🚀 Instalación (Para locos)
+## 🛠️ Stack Tecnológico y Arquitectura
 
-1.  **Clonar el laboratorio:**
+Este proyecto es un **monorepo** orquestado con **Docker Compose**.
+
+*   **Core:** Node.js + TypeScript.
+*   **Cerebro IA:**
+    *   **Local:** `Ollama` (con `dolphin-mistral`) para el modo público.
+    *   **Cloud:** `Google Gemini` para el modo privado.
+*   **Servicios:**
+    *   `portfolio`: Frontend SvelteKit.
+    *   `soren-mirror`: CLI interactiva con `Inquirer.js`.
+*   **Infraestructura:** Docker.
+*   **Filosofía:** "Docs as Code". Toda la documentación, personalidades y contexto viven en el directorio [`docs/`](./docs).
+
+## 🚀 Instalación y Uso
+
+1.  **Clonar el repositorio:**
     ```bash
-    git clone [https://github.com/brianleft28/soren-mirror.git](https://github.com/brianleft28/soren-mirror.git)
+    git clone https://github.com/brianleft28/soren-mirror.git
     cd soren-mirror
     ```
 
-2.  **Configurar las variables (Secretos):**
-    ```bash
-    cp .env.example .env
-    # Editar .env con GEMINI_API_KEY y OPENWEATHER_KEY
-    ```
+2.  **Configurar las variables de entorno:**
+    *   Copia `.env.example` a un nuevo archivo `.env` en la raíz del proyecto.
+    *   Rellena tu `GEMINI_API_KEY`.
 
-3.  **Encender la máquina:**
+3.  **Levantar todos los servicios:**
     ```bash
-    # Modo Docker (Recomendado para aislamiento)
-    docker-compose up -d
-    
-    # Modo Manual (Para desarrollo)
-    npm install
-    npm start
+    docker-compose up -d --build
+    ```
+    *   Esto iniciará el contenedor del portfolio y el de Ollama.
+    *   El portfolio estará disponible en `http://localhost:3000`.
+
+4.  **Ejecutar el Modo Privado (Søren Writer):**
+    *   Para iniciar la CLI interactiva, conéctate al contenedor de `soren-mirror`:
+    ```bash
+    docker-compose exec soren-mirror npm start
     ```
 
 ## 📄 Licencia
-Este proyecto es una exploración personal. Si te sirve, usalo. Si te asusta, dejalo.
+Este proyecto es una exploración personal. Si te sirve, úsalo. Si te asusta, déjalo.

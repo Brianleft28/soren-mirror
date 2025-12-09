@@ -59,7 +59,7 @@
 
        function goToRoot() {
         currentPathIds = [];
-        activeFileId = 'welcome'; // O null si prefieres que no haya nada seleccionado.
+        activeFileId = 'welcome'; 
     }
 </script>
 

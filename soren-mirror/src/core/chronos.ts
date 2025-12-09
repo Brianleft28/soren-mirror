@@ -1,32 +1,51 @@
-import { differenceInMinutes } from 'date-fns'; // O usar Math nativo
+/**
+ * Módulo Chronos: Gestiona el tiempo de la sesión y la fatiga estocástica.
+ * Implementa la lógica de ADR-005.
+ */
 
-export interface SessionState {
-  startTime: Date;
-  lastBreak: Date;
-}
+export class Chronos {
+    private startTime: number;
+    private readonly MIN_TIME_MINUTES = 45;
+    private readonly MAX_TIME_MINUTES = 120;
 
-export function analyzeTimeHealth(session: SessionState): string | null {
-  const now = new Date();
-  const currentHour = now.getHours();
-  const minutesActive = differenceInMinutes(now, session.startTime);
+    constructor() {
+        this.startTime = Date.now();
+        console.log("🕰️  Chronos activado. El tiempo de sesión ha comenzado.");
+    }
 
-  // REGLA DE ORO: El Toque de Queda (23:00 HS)
-  // Si son más de las 11 PM, Søren se pone la gorra.
-  if (currentHour >= 23 || currentHour < 6) {
-    return "🛑 ALERTA DE CICLO CIRCADIANO: Son más de las 23:00. El cerebro ya no compila, solo buclea ansiedad. \n\nComando obligatorio: `shutdown -h now` (A la cama). \n\n¿Guardo el estado actual o cerramos así?";
-  }
+    private getSessionDurationInMinutes(): number {
+        return (Date.now() - this.startTime) / (1000 * 60);
+    }
 
-  // Recordatorio de Necesidades (Hidratación/Postura) cada 60 min
-  if (minutesActive > 0 && minutesActive % 60 === 0) {
-    return "🥤 CHECK DE MANTENIMIENTO: Pasó una hora. Si no tomaste agua o estiraste la espalda, tu rendimiento va a caer un 15% en los próximos 20 min. Hacelo ahora.";
-  }
+    /**
+     * Calcula la probabilidad de interrupción según ADR-005.
+     * @returns {number} Probabilidad entre 0 y 1.
+     */
+    public getInterruptionProbability(): number {
+        const t = this.getSessionDurationInMinutes();
 
-  return null; // Todo en orden temporal
-}
+        if (t < this.MIN_TIME_MINUTES) {
+            return 0;
+        }
+        if (t >= this.MAX_TIME_MINUTES) {
+            return 1;
+        }
 
-// Tu fórmula de "Gestión de Fatiga Estocástica"
-export function calculateInterruptionRisk(minutesActive: number): number {
-  if (minutesActive < 45) return 0;
-  if (minutesActive < 90) return 0.6; // 60% chance
-  return 1.0; // 100% chance (Game over)
+        // Fórmula de ADR-005
+        const probability = (t - this.MIN_TIME_MINUTES) / (this.MAX_TIME_MINUTES - this.MIN_TIME_MINUTES);
+        return probability;
+    }
+
+    /**
+     * Determina si se debe interrumpir la sesión basado en la probabilidad.
+     */
+
+    public shouldInterrupt(): boolean {
+        const probability = this.getInterruptionProbability();
+        if (probability === 0) return false;
+        if (probability === 1) return true;
+        
+        // El factor sorpresa: tiramos el dado.
+        return Math.random() < probability;
+    }
 }

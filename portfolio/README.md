@@ -1,103 +1,56 @@
-# Portfolio v2 - Brian Benegas
+# Portfolio Interactivo v2 (Søren Público)
 
-Un portfolio interactivo con temática de explorador de archivos, diseñado para demostrar habilidades full-stack a través de una arquitectura de microservicios dockerizados.
+Este proyecto es la cara visible del monorepo: una aplicación web construida con **SvelteKit** que funciona como el portfolio personal de Brian Benegas. Su característica principal es la integración de **"Søren Público"**, un asistente de IA que responde preguntas sobre el perfil y los proyectos del autor.
+
+El asistente se ejecuta de forma local y privada, utilizando un contenedor Docker con **Ollama** para garantizar que no haya dependencia de APIs externas para su función principal.
 
 ### Stack Tecnológico
 
 ![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
-![Bootstrap](https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&logo=bootstrap&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![NestJS](https://img.shields.io/badge/NestJS-E0234E?style=for-the-badge&logo=nestjs&logoColor=white)
-![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
 
 ---
 
-## 🎯 Arquitectura y Estrategia
+## 🎯 Arquitectura y Flujo de Datos del Chat
 
+Este servicio (`portfolio`) es el frontend del proyecto, pero gracias a SvelteKit, también tiene su propio backend para manejar la lógica de la API. El flujo de una consulta al chat es el siguiente:
 
-Este proyecto sigue un patrón de **arquitectura de microservicios dockerizados**, organizados en un **monorepo** y orquestados a través de `docker-compose`.
+1.  **Frontend (Componente Svelte)**: El usuario envía un mensaje desde la interfaz web. La UI hace una petición `POST` a su propio backend en `/api/chat`.
 
--   **Frontend:** Un servicio SvelteKit responsable de la interfaz de usuario.
--   **Backend:** Un servicio Nest.js que expone una API RESTful.
--   **Base de Datos:** Un servicio MySQL para la persistencia de datos.
+2.  **Backend (API Route - `src/routes/api/chat/+server.ts`)**: Este es el orquestador de la respuesta.
+    *   Recibe el mensaje del usuario.
+    *   Carga la personalidad base desde `../../docs/vision/public_persona.md`.
+    *   Dependiendo de la pregunta, carga contexto adicional desde los archivos en `../../docs/context/` o `../../docs/proyectos/`.
+    *   Construye un *System Prompt* completo y detallado.
+    *   Realiza una llamada `fetch` al servicio de Ollama (`soren_brain`), que se ejecuta en otro contenedor pero dentro de la misma red de Docker.
 
-`Docker Compose` crea una red privada donde los servicios se comunican por sus nombres (ej. el frontend llama a `http://api:3000`).
+3.  **Cerebro IA (`ollama` service)**: El contenedor de Ollama recibe la petición, procesa el prompt con el modelo `dolphin-mistral` y genera una respuesta.
 
-### Flujo de Despliegue (CI/CD)
+4.  **Respuesta al Usuario**: La respuesta viaja de vuelta a través del backend de SvelteKit hasta la interfaz de usuario, donde se muestra al usuario.
 
-El proyecto está configurado para un despliegue continuo totalmente automatizado en un VPS. Un `push` a `main` dispara un workflow de GitHub Actions que construye, publica y despliega las nuevas imágenes Docker.
-
----
-
-## 🗺️ Roadmap y Documentación
-
-La planificación detallada y la documentación técnica del proyecto se encuentran dentro de la carpeta `frontend/src/lib/docs`.
-
--   **[Ver el Roadmap del Proyecto](./src/lib/docs/roadmap.MD)**
--   **[Ver Guía de Migración a Monorepo](./src/lib/docs/monorepo-setup.md)**
--   **[Ver Diseño de la Base de Datos](./src/lib/docs/database-schema.md)**
+Este diseño permite que el portfolio sea una aplicación autocontenida que consume la inteligencia del "cerebro" local, manteniendo la separación de responsabilidades.
 
 ---
 
-## 📁 Estructura del Monorepo
+## 🚀 Desarrollo Local
 
-```
-.
-├── api/                  # Microservicio de Backend (NestJS)
-├── frontend/             # Microservicio de Frontend (SvelteKit)
-└── docker-compose.yml    # Orquesta todos los servicios
-```
+Para levantar este servicio junto con su dependencia (Ollama):
 
----
-
-## 🏃‍♂️ Desarrollo Local
-
-Existen dos formas de trabajar en este proyecto.
-
-### Opción 1: Ejecutar la Arquitectura Completa (Recomendado)
-
-Este método utiliza Docker Compose para levantar todos los microservicios y simular el entorno de producción.
-
-1.  **Clonar el repositorio:**
-    ```bash
-    git clone https://github.com/Brianleft28/portfolio_sveltekit.git
-    cd portfolio_sveltekit
-    ```
-2.  **Levantar los servicios:**
+1.  **Asegúrate de estar en la raíz del monorepo**, no dentro del directorio `portfolio`.
+2.  **Configura las variables de entorno** creando un archivo `.env` en la raíz, basado en `.env.example`.
+3.  **Ejecuta Docker Compose:**
     ```bash
     docker-compose up -d --build
     ```
-3.  **Acceder:** El frontend estará disponible en `http://localhost:5173`.
-
-### Opción 2: Desarrollar un Servicio de Forma Aislada
-
-Si solo necesitas trabajar en un servicio específico sin levantar toda la infraestructura.
-
-**Para el Frontend (SvelteKit):**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-**Para el Backend (NestJS):**
-```bash
-cd api
-npm install
-npm run start:dev
-```
+4.  **Accede a la aplicación:** El portfolio estará disponible en `http://localhost:3000`.
 
 ---
 
-## 📄 Licencia
+## 📄 Documentación Profunda
 
-Este proyecto está licenciado bajo la Licencia MIT.
+Este `README.md` es un resumen técnico. Para una visión completa del proyecto, incluyendo decisiones de arquitectura (ADRs) y el manifiesto completo, consulta la documentación en el directorio `docs/` del repositorio principal.
 
-## 👤 Autor
-
-**Brian Benegas**
-
--   Sitio web: [brianleft.com](https://portfolio.brianleft.com)
--   GitHub: [Brianleft28](https://github.com/Brianleft28)
--   LinkedIn: [Brian Benegas](https://www.linkedin.com/in/brian-benegas-44770729b/) 
+-   **[Ver Documentación del Proyecto Portfolio](../../docs/proyectos/portfolio.md) 
+**// filepath: portfolio/README.md **

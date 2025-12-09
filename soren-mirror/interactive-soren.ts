@@ -4,158 +4,95 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import dotenv from "dotenv";
 import fs from 'fs';
 import path from 'path';
-import { browseFileSystem } from './src/utils/file.browser';
+import { Chronos } from './src/core/chronos';
+import { Archivist } from './src/core/archivist';
+import { calculateStressLevel } from './src/core/stress-manager';
 
 dotenv.config();
 
 const API_KEY = process.env.GEMINI_API_KEY || "";
 const genAI = new GoogleGenerativeAI(API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-// --- FUNCIÓN PARA LISTAR MODELOS GEMINI ---
-async function listGeminiModels() {
-    console.log(chalk.gray("📡 Consultando modelos disponibles en Google AI..."));
-    try {
-        // Hacemos un fetch manual porque el SDK a veces oculta modelos legacy/beta
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`);
-        const data = await response.json();
-        
-        if (!data.models) return [];
-
-        // Filtramos solo los que sirven para generar contenido (chat)
-        return data.models
-            .filter((m: any) => m.supportedGenerationMethods.includes("generateContent"))
-            .map((m: any) => ({
-                name: m.displayName || m.name,
-                value: m.name.replace('models/', '') // Limpiamos el prefijo
-            }))
-            .sort((a: any, b: any) => b.value.localeCompare(a.value)); // Ordenamos los más nuevos primero
-    } catch (error) {
-        console.error(chalk.red("Error listando modelos, usando defaults."));
-        return [
-            { name: 'Gemini 1.5 Flash (Rápido)', value: 'gemini-1.5-flash' },
-            { name: 'Gemini 1.5 Pro (Potente)', value: 'gemini-1.5-pro' },
-        ];
-    }
-}
-
-// --- GENERACIÓN CON STREAMING (Para velocidad) ---
-async function streamGeminiResponse(prompt: string, modelName: string, systemPrompt?: string) {
-    const model = genAI.getGenerativeModel({
-        model: modelName,
+async function getSorenResponse(prompt: string, systemPrompt: string) {
+    const chat = model.startChat({
+        history: [],
+        generationConfig: { maxOutputTokens: 1000 },
         systemInstruction: systemPrompt,
     });
-
-    const result = await model.generateContentStream(prompt);
-    
-    let fullText = "";
-    process.stdout.write(`🤖 ${chalk.magenta('Soren:')} `);
-
-    for await (const chunk of result.stream) {
-        const chunkText = chunk.text();
-        process.stdout.write(chunkText); // Escribimos a medida que llega
-        fullText += chunkText;
-    }
-    console.log("\n"); // Salto de línea al final
-    return fullText;
-}
-
-async function getOllamaResponse(prompt: string, modelName: string, systemPrompt?: string) {
-    // Simplemente devolvemos el texto completo por compatibilidad rápida
-    const response = await fetch(`${process.env.OLLAMA_HOST || 'http://localhost:11434'}/api/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model: modelName, prompt, system: systemPrompt, stream: false }),
-    });
-    const data = await response.json();
-    return data.response;
+    const result = await chat.sendMessage(prompt);
+    return result.response.text();
 }
 
 async function main() {
     console.clear();
-    console.log("🔮 SOREN MIRROR - CLI v2.0 (Streaming) 🔮");
-    console.log("-------------------------------------------");
+    console.log("🔮 SØREN WRITER - MODO PRIVADO (v2) 🔮");
+    console.log("-----------------------------------------");
 
-    // A. Cargar Identidad
-    const personaPath = path.join(__dirname, 'docs', 'vision', 'public_persona.md');
-    let sorenPersona = fs.existsSync(personaPath) ? fs.readFileSync(personaPath, 'utf-8') : "Eres Søren.";
-
-    // B. Selección de Motor y Modelo
-    const { provider } = await inquirer.prompt([{
-        type: 'list',
-        name: 'provider',
-        message: 'Motor de Inteligencia:',
-        choices: [
-            { name: 'Google Gemini (Cloud)', value: 'gemini' },
-            { name: 'Ollama (Local)', value: 'ollama' }
-        ]
-    }]);
-
-    let modelName: string;
-    let runChat: any; // Función ejecutora
-
-    if (provider === 'gemini') {
-        const models = await listGeminiModels();
-        const { selectedModel } = await inquirer.prompt([{
-            type: 'list',
-            name: 'selectedModel',
-            message: 'Selecciona el modelo de Gemini:',
-            choices: models,
-            pageSize: 10
-        }]);
-        modelName = selectedModel;
-        runChat = streamGeminiResponse; // Usamos la versión Stream
-    } else {
-        modelName = 'dolphin-mistral'; // O listar modelos de ollama/api/tags si quisieras
-        runChat = async (p: string, m: string, s: string) => {
-            const txt = await getOllamaResponse(p, m, s);
-            console.log(`🤖 ${chalk.magenta('Soren:')} ${txt}\n`);
-        };
-    }
-
-    // C. Navegador de Archivos (Contexto)
-    console.log(chalk.cyan("\n📂 Contexto de la Sesión:"));
-    const selectedFile = await browseFileSystem();
+    // INICIALIZAR MÓDULOS COGNITIVOS
+    const chronos = new Chronos();
     
-    // Si el nodo del FileSystem tiene un 'path' real, leemos el archivo del disco.
-    let technicalContext = selectedFile.content || "";
-    
-    // Hack para leer archivos reales si definimos 'realPath' en el file-system.ts
-    // (Esto responde a tu pedido de usar READMEs reales)
-    if ((selectedFile as any).realPath) {
-        try {
-            technicalContext = fs.readFileSync((selectedFile as any).realPath, 'utf-8');
-            console.log(chalk.gray(`   (Leído desde disco: ${(selectedFile as any).realPath})`));
-        } catch (e) {
-            console.error(chalk.red("   (No se pudo leer el archivo real, usando fallback)"));
-        }
-    }
+    // CARGAR PERSONALIDAD "WRITER"
+    const personaPath = path.join(__dirname, 'docs', 'vision', 'private_persona.md');
+    const basePersona = fs.existsSync(personaPath) 
+        ? fs.readFileSync(personaPath, 'utf-8') 
+        : "Eres Søren, un editor brutalmente honesto.";
 
-    const finalSystemPrompt = `
-    ${sorenPersona}
-    
-    === CONTEXTO ACTIVO ===
-    ${technicalContext}
-    =======================
-    `;
+    const chatHistory: { user: string, soren: string }[] = [];
+    let lastMessageTime = Date.now(); 
 
-    // D. Chat Loop
-    console.log(chalk.green(`\n✅ Conectado a ${modelName}.`));
-    
+    console.log(chalk.green(`\n✅ Conectado. Escribe para comenzar. ('salir' para guardar y terminar)`));
+
+    // 3. BUCLE DE CHAT CON CAPACIDADES COGNITIVAS
     while (true) {
+        // A. Check de Fatiga (Chronos)
+        if (chronos.shouldInterrupt()) {
+            console.log(chalk.redBright("\n\n--- ⚠️ ALERTA DE FATIGA ESTOCÁSTICA (CHRONOS) ---"));
+            console.log(chalk.yellow("Llevas mucho tiempo. Es hora de una pausa obligatoria. La sesión se guardará ahora."));
+            break; 
+        }
+
         const { prompt } = await inquirer.prompt([{
             type: 'input',
             name: 'prompt',
-            message: chalk.green('Vos:')
+            message: chalk.cyan('Vos:')
         }]);
 
         if (prompt.toLowerCase() === 'salir') break;
 
+        // B. Medición de Estrés (StressManager)
+        const stressScore = calculateStressLevel(prompt, lastMessageTime);
+        lastMessageTime = Date.now(); // Actualizamos el timestamp para el próximo turno
+
+        let stressInstruction = "";
+        if (stressScore > 7) {
+            stressInstruction = `\n\nALERTA DE ESTRÉS ALTO (Nivel ${stressScore}/10): El usuario está escribiendo de forma maníaca o muy densa. Tu respuesta debe ser corta, directa y buscar que baje el ritmo. Haz una pregunta simple para que frene.`;
+        } else if (stressScore > 4) {
+            stressInstruction = `\n\nAVISO DE ESTRÉS MODERADO (Nivel ${stressScore}/10): El usuario está acelerado. Mantén tus respuestas concisas.`;
+        }
+        
+        // Construimos el prompt final para el LLM
+        const finalSystemPrompt = `${basePersona}${stressInstruction}`;
+
         try {
-            await runChat(prompt, modelName, finalSystemPrompt);
+            process.stdout.write(chalk.gray("Søren piensa..."));
+            const response = await getSorenResponse(prompt, finalSystemPrompt);
+            process.stdout.write("\r" + " ".repeat(20) + "\r");
+            
+            console.log(chalk.magenta('Søren: ') + response);
+            chatHistory.push({ user: prompt, soren: response });
+
         } catch (error: any) {
             console.error(chalk.red(`❌ Error: ${error.message}`));
         }
     }
+
+    // 4. GUARDAR SESIÓN (Archivist)
+    if (chatHistory.length > 0) {
+        Archivist.saveSession(chatHistory);
+    }
+
+    console.log(chalk.bold("\nFin de la sesión."));
 }
 
 main();
