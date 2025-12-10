@@ -5,12 +5,6 @@
 * **Decisión:** Separar `soren-mirror` del portfolio.
 * **Motivo:** El agente requiere dependencias pesadas (Puppeteer, TensorFlow.js) que no deben ensuciar el frontend SvelteKit.
 
-## ⛈️ ADR-002: Inferencia de Estado "El Aleph" (Síncopa Ambiental)
-* **Estado:** Aceptado (Complementario a ADR-008).
-* **Contexto:** Factores externos (clima) afectan la regulación interna.
-* **Decisión:** Implementar un **Monitor de Síncopa** basado en OpenWeatherMap.
-* **Regla:** Presión Atmosférica Baja / Tormenta -> Aumenta el *BaseStress* inicial del sistema.
-
 ## 🎲 ADR-005: Gestión de Fatiga mediante Probabilidad Estocástica (v2)
 * **Estado:** Aceptado (Core Feature).
 * **Cambio Conceptual:** Se abandona la teoría del "Déficit de Atención" en favor de la **"Desregulación Atencional"**.
@@ -19,7 +13,7 @@
 * **Rationale:** Evitar la "ceguera de alarma" mediante incertidumbre (dopamina) y mímesis biológica.
 
 ## 🔌 ADR-006: Migración a Microservicio de Autenticación y SQL
-* **Estado:** Propuesto.
+* **Estado:** Implementado.
 * **Decisión:** Desacoplar persistencia a un servicio NestJS + MySQL.
 * **Motivo:** Resolver problemas de concurrencia en archivos planos y permitir acceso compartido (Web/CLI).
 
@@ -31,7 +25,7 @@
     2. **SorenCommand:** Clases aisladas para cada acción.
 * **Consecuencia:** Søren puede operar en múltiples entornos manteniendo una única "memoria".
 
-## 🧭 ADR-008: Monitor de Horizonte Semántico (Solución a la Manía)
+## 🧭 ADR-008: Monitor de Horizonte Semántico (Aplicado a la Manía)
 * **Estado:** Aceptado.
 * **Contexto:** El "Hiperfoco" puede convertirse en un bucle improductivo de micro-detalles (Manía), perdiendo la visión arquitectónica.
 * **Decisión:** Implementar un sistema de **Doble Memoria (Draft vs. Memory)**.

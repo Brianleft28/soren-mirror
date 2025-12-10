@@ -8,12 +8,12 @@
     "doc": "docs"
   },
   "scripts": {
-    "start": "ts-node interactive-soren.ts",
+    "start": "node --loader ts-node/esm interactive-soren.ts",
     "build": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "dev": "npm run build && node dist/interactive-soren.js"
+},
   "keywords": [],
-  "author": "",
+  "author": "Brian Benegas",
   "license": "ISC",
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

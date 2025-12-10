@@ -21,30 +21,6 @@ services:
     networks:
       - soren_network
 
-# NÚCLEO DE AUTH Y PERSISTENCIA
-  soren-core:
-    build:
-      context: ./soren-core
-      dockerfile: Dockerfile
-    container_name: soren_api
-    ports:
-      - "4000:3000" # Exponemos en puerto 4000 para no chocar con el portfolio
-    environment:
-      - DB_HOST=soren_db
-      - DB_USERNAME=${MYSQL_USER}      # Lee 'soren_user' del .env raíz
-      - DB_PORT=3306
-      - DB_PASSWORD=${MYSQL_PASSWORD}  # Lee tu password larga del .env raíz
-      - DB_DATABASE=${MYSQL_DATABASE}  # Lee el nombre de la base de datos del .env raíz
-    depends_on:
-      soren_db:
-        condition: service_healthy
-    volumes:
-      # Montamos el código para desarrollo en vivo (Hot Reload)
-      - ./soren-core:/usr/src/app
-      - /usr/src/app/node_modules
-    networks:
-      - soren_network
-
   # CEREBRO (Ollama) - Configuración solo para CPU
   ollama:
     image: ollama/ollama:latest # Imagen estándar, sin :rocm
@@ -69,7 +45,6 @@ services:
     environment:
       - VITE_OLLAMA_URL=http://ollama:11434/api/generate
       - HOST=0.0.0.0
-      # Si el portfolio necesita acceder a la DB también:
       - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@soren_db:3306/${MYSQL_DATABASE}
     depends_on:
       - soren_db
