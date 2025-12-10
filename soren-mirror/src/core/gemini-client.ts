@@ -3,6 +3,13 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+export enum SorenMode {
+  ARCHITECT = "architect",
+  WRITER = "writer",
+  PUBLIC = "public",
+  RAW = "raw",
+}
+
 const apiKey = process.env.GEMINI_API_KEY;
 
 if (!apiKey) {

@@ -42,7 +42,7 @@ export class LocalAgent {
         return "Eres Søren.";
     }
   }
- async chat(mode: SorenMode, prompt: string, context: string = ""): Promise<string> {
+ async  chat(mode: SorenMode, prompt: string, context: string = ""): Promise<string> {
     const persona = this.loadPersona(mode);
     const systemPrompt = `${persona}\n\nCONTEXTO PREVIO:\n${context}`;
     

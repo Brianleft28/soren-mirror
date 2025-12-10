@@ -10,11 +10,9 @@ export class SorenOrchestrator {
     const args = argv.slice(2);
 
     if (args.length === 0) {
-      // Modo CONSOLE: interactivo con boot completo
       const consoleAgent = new ConsoleAgent();
       await consoleAgent.start();
     } else {
-      // Modo CLI: comando directo
       const [commandName, ...commandArgs] = args;
       const cliAgent = new CliAgent(args);
       await cliAgent.execute(commandName, commandArgs);

@@ -8,6 +8,10 @@ export class CommandDispatcher {
   register(name: string, command: SorenCommand) {
     this.commands.set(name, command);
   }
+  
+  has(name: string): boolean {
+    return this.commands.has(name);
+  }
 
   async execute(commandName: string, args: string[], channel: IChannel) {
     const command = this.commands.get(commandName);

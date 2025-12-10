@@ -1,11 +1,13 @@
 import fs from "fs/promises";
 import path from "path";
+import { SorenMode } from "./ollama-client.js";
 
 export interface SessionData {
   username: string;
   loginTime: Date;
   sessionDurationMinutes: number;
   isActive: boolean;
+  persona?: SorenMode;
 }
 
 export class SessionManager {
@@ -14,17 +16,28 @@ export class SessionManager {
 
   async startSession(
     username: string,
-    durationMinutes: number = 60
+    durationMinutes: number = 60,
+    initialPersona: SorenMode = SorenMode.ARCHITECT
   ): Promise<void> {
     this.session = {
       username,
       loginTime: new Date(),
       sessionDurationMinutes: durationMinutes,
       isActive: true,
+      persona: initialPersona,
     };
-
     // Guardar sesión en disco
     await this.saveSession();
+  }
+
+  async setPersona(persona: SorenMode): Promise<void> {
+    if (!this.session) return;
+    this.session.persona = persona;
+    await this.saveSession();
+  }
+
+  async getPersona(): Promise<SorenMode | undefined> {
+    return this.session?.persona;
   }
 
   private async saveSession(): Promise<void> {
