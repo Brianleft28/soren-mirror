@@ -26,16 +26,13 @@ let localBrain: LocalAgent;
 let currentPersonaMode: SorenMode = SorenMode.ARCHITECT;
 let activeProject: string | null = null;
 
-// --- HELPERS ---
+// Helper para cargar archivos de persona (usa fs)
 function loadFileContent(filePath: string): string {
-    // __dirname no existe en ES Modules, usamos esta alternativa.
-    const scriptDir = path.dirname(new URL(import.meta.url).pathname);
-    // Construimos la ruta absoluta subiendo un nivel desde /dist
-    const absolutePath = path.resolve(scriptDir, '..', filePath);
     try {
-        return fs.readFileSync(absolutePath, 'utf-8');
+        // La lectura de disco es crucial para la filosofía Local-First
+        return fs.readFileSync(filePath, 'utf-8');
     } catch (e) {
-        return `Error: No se encontró el archivo de contexto en ${absolutePath}.`;
+        return `Error: No se encontró el archivo de contexto en ${filePath}.`;
     }
 }
 
@@ -116,20 +113,17 @@ async function selectModel(): Promise<string> {
         return "gemini-1.5-flash";
     }
 }
-
-
-// --- PROCESAMIENTO HÍBRIDO (ARQUITECTURA POLIMÓRFICA) ---
 async function procesarRespuestaHibrida(inputUsuario: string, contextProject: string, currentUser: string, memory: GlobalMemory): Promise<string> {
     
-    // 1. Cargar la base universal de la personalidad de Søren.
+    // Cargar la base universal de la personalidad de Søren.
     const basePersona = loadFileContent('./docs/vision/base_persona.md');
     
-    // 2. Cargar el perfil personal del creador y la auto-consciencia del sistema.
+    // Cargar el perfil personal del creador y la auto-consciencia del sistema.
     const personalProfile = loadFileContent('./docs/context/personal_profile.md');
     const projectMgr = new ProjectManager(currentUser);
     const sorenSelfContext = projectMgr.loadProjectContext("soren-mirror");
 
-    // 3. Cargar la especialización del rol actual.
+    // Cargar la especialización del rol actual.
     let rolEspecificoPath = '';
     switch (currentPersonaMode) {
         case SorenMode.ARCHITECT: rolEspecificoPath = './docs/vision/architect_persona.md'; break;
@@ -138,7 +132,7 @@ async function procesarRespuestaHibrida(inputUsuario: string, contextProject: st
     }
     const rolEspecifico = loadFileContent(rolEspecificoPath);
 
-    // 4. Construir el System Prompt final de forma dinámica.
+    // Construir el System Prompt final de forma dinámica.
     const systemInstruction = `
         ${basePersona}
 
@@ -171,51 +165,37 @@ async function procesarRespuestaHibrida(inputUsuario: string, contextProject: st
     return respuestaFinal;
 }
 
-
-// --- FUNCIÓN PRINCIPAL DE LA APLICACIÓN (FLUJO CORREGIDO) ---
 async function main() {
     await systemBoot();
 
-    // VERIFICAR E INICIALIZAR GEMINI
-    if (!initializeGemini()) {
+    // VERIFICAR API KEY DE GEMINI ANTES DE CONTINUAR
+    if (!API_KEY) {
         console.log(chalk.red("Abortando sistema. La API de Gemini es necesaria para continuar."));
         process.exit(1);
     }
 
-    //  SELECCIONAR MODELO DE GEMINI
+    // SELECCIONAR MODELO DE GEMINI
     const geminiModelName = await selectModel();
     localBrain = new LocalAgent('dolphin-llama3', OLLAMA_HOST_URL);
 
-    // 3. INICIALIZAR IDENTITY MANAGER
+    // INICIALIZAR IDENTITY MANAGER
     const identityMgr = new IdentityManager(OLLAMA_HOST_URL, geminiModelName);
 
-    // 4. AUTENTICAR AL USUARIO
+    // AUTENTICAR AL USUARIO
     const isAuthenticated = await authenticationFlow(identityMgr);
     if (!isAuthenticated) {
         console.log(chalk.red("Abortando sistema."));
         process.exit(1);
     }
-    }
 
-    // 4. OBTENER USUARIO ACTUAL (SOLO DESPUÉS DE AUTENTICAR)
+    // OBTENER USUARIO ACTUAL (SOLO DESPUÉS DE AUTENTICAR)
     const currentUser = IdentityManager.getCurrentUser();
     if (!currentUser) {
         console.log(chalk.red("Error crítico: No se pudo obtener el usuario actual tras el login."));
         process.exit(1);
     }
 
-    // 5. SELECCIONAR MODO/PERSONA
-    const { personaSelected } = await inquirer.prompt([{
-        type: 'list', name: 'personaSelected', message: '🎭 Selecciona el MODO:',
-        choices: [
-            { name: '🏗️  Søren Architect (Privado - Código)', value: SorenMode.ARCHITECT },
-            { name: '✒️  Søren Writer (Privado - Literario)', value: SorenMode.WRITER },
-            { name: '🌐 Søren Public (Público - Portfolio)', value: SorenMode.PUBLIC }
-        ]
-    }]);
-    currentPersonaMode = personaSelected;
-
-    // 6. INICIALIZAR MÓDULOS CON EL USUARIO CORRECTO
+    // INICIALIZAR MÓDULOS CON EL USUARIO CORRECTO
     const projectManager = new ProjectManager(currentUser);
     const stressManager = new StressManager(currentUser);
     const memory = new GlobalMemory(currentUser);
@@ -225,6 +205,17 @@ async function main() {
     if (!projectManager.getProjects().includes("soren-mirror")) {
         projectManager.createProject("soren-mirror", "Técnico, Open Source, Autorreferencial", loadFileContent('./docs/soren-mirror/technical-manifesto.md'));
     }
+
+    // SELECCIONAR MODO/PERSONA
+    const { personaSelected } = await inquirer.prompt([{
+        type: 'list', name: 'personaSelected', message: '🎭 Selecciona el MODO:',
+        choices: [
+            { name: '🏗️  Søren Architect (Privado - Código)', value: SorenMode.ARCHITECT },
+            { name: '✒️  Søren Writer (Privado - Literario)', value: SorenMode.WRITER },
+            { name: '🌐 Søren Public (Público - Portfolio)', value: SorenMode.PUBLIC }
+        ]
+    }]);
+    currentPersonaMode = personaSelected;
 
     // Lógica de selección de proyecto de escritura
     if (currentPersonaMode === SorenMode.WRITER) {
@@ -253,7 +244,6 @@ async function main() {
         console.log(chalk.yellow(`⚡ Nivel de estrés predicho para esta hora: ${baseStress.toFixed(2)}/10`));
     }
 
-    // --- BUCLE DE CHAT PRINCIPAL ---
     while (true) {
         if (chronos.shouldInterrupt()) {
             console.log(chalk.red.bold("\n[CHRONOS] Alerta de fatiga estocástica. Tómate un descanso."));
@@ -264,18 +254,18 @@ async function main() {
             type: 'input', name: 'prompt', message: chalk.cyan(activeProject ? `[${activeProject}] >` : 'Vos >')
         }]);
 
-        if (prompt.toLowerCase() === 'salir') break;
+        if (prompt.toLowerCase() === 'salir') {
+            break;
+        }
 
         const currentStress = stressManager.updateAndGetStress(prompt);
-        // console.log(chalk.gray(`Nivel de estrés actual: ${currentStress.toFixed(2)}`)); // Descomentar para debug
-
+        console.log(chalk.gray(`Nivel de estrés actual: ${currentStress.toFixed(2)}`));
         const projectData = activeProject ? projectManager.loadProject(activeProject) : null;
         const context = projectData ? projectData.manifest : "Sin proyecto activo.";
         
         process.stdout.write(chalk.gray("Procesando..."));
 
         const respuesta = await procesarRespuestaHibrida(prompt, context, currentUser, memory);
-
         process.stdout.write("\r" + " ".repeat(20) + "\r");
         console.log(chalk.magenta(`Søren: `) + respuesta);
 
