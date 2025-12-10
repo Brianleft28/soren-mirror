@@ -3,54 +3,46 @@
 ## 🏗 ADR-001: Arquitectura Stand-Alone
 * **Estado:** Aceptado.
 * **Decisión:** Separar `soren-mirror` del portfolio.
-* **Motivo:** El agente requiere dependencias pesadas (Puppeteer para scraping, TensorFlow.js para futuro análisis de sentimiento local) que no deben ensuciar el frontend SvelteKit.
+* **Motivo:** El agente requiere dependencias pesadas (Puppeteer, TensorFlow.js) que no deben ensuciar el frontend SvelteKit.
 
-## ⛈️ ADR-002: Inferencia de Estado "El aleph" (Síncopa)
-* **Estado:** En desarrollo.
-* **Contexto:** El autor entra en estados de hiperestimulación (verborragia extrema) que preceden al burnout.
-* **Decisión:** Implementar un **Monitor de Síncopa** que cruce dos señales en tiempo real:
-    1.  **Estres:** Datos de OpenWeatherMap (Presión baja/Tormenta = Mayor riesgo de manía).
-    2.  **Conductual:** Análisis de densidad de tokens por minuto en el input.
-* **Acción:** Si (Verborragia Alta) + (Estres) -> Activar protocolo de calma.
+## ⛈️ ADR-002: Inferencia de Estado "El Aleph" (Síncopa Ambiental)
+* **Estado:** Aceptado (Complementario a ADR-008).
+* **Contexto:** Factores externos (clima) afectan la regulación interna.
+* **Decisión:** Implementar un **Monitor de Síncopa** basado en OpenWeatherMap.
+* **Regla:** Presión Atmosférica Baja / Tormenta -> Aumenta el *BaseStress* inicial del sistema.
 
-## 🎲 ADR-005: Gestión de Fatiga mediante Probabilidad Estocástica
+## 🎲 ADR-005: Gestión de Fatiga mediante Probabilidad Estocástica (v2)
 * **Estado:** Aceptado (Core Feature).
-* **Contexto:** Los temporizadores fijos (Pomodoro) fallan con el TDAH porque interrumpen el flujo arbitrariamente o son ignorados por costumbre.
-* **Decisión:** Implementar un algoritmo de **Interrupción Estocástica Creciente**.
-* **Fórmula:**
-    $$P(t) = \frac{t - 45}{120 - 45}$$
-    *(Donde $t$ es el tiempo en minutos. Antes de los 45 min, la probabilidad es 0. A los 120 min, es 1.)*
-* **Rationale:**
-    1.  **Mímesis Biológica:** Imita el agotamiento progresivo de los neurotransmisores.
-    2.  **Factor Sorpresa:** La incertidumbre genera dopamina y mantiene la atención sobre la alerta. Evita la "ceguera de alarma".
+* **Cambio Conceptual:** Se abandona la teoría del "Déficit de Atención" en favor de la **"Desregulación Atencional"**.
+* **Implicación:** El fallo no es la falta de foco, sino la incapacidad de regular su intensidad.
+* **Decisión:** La probabilidad de interrupción es una función multivariable $P(t, c)$ donde $c$ es el contexto emocional.
+* **Rationale:** Evitar la "ceguera de alarma" mediante incertidumbre (dopamina) y mímesis biológica.
 
-# ADR-006: Migración a Microservicio de Autenticación y Persistencia SQL
+## 🔌 ADR-006: Migración a Microservicio de Autenticación y SQL
+* **Estado:** Propuesto.
+* **Decisión:** Desacoplar persistencia a un servicio NestJS + MySQL.
+* **Motivo:** Resolver problemas de concurrencia en archivos planos y permitir acceso compartido (Web/CLI).
 
-## Estado
-Propuesto
+## 🎮 ADR-007: Arquitectura de "La Comandera" (Patrón Command)
+* **Estado:** Aceptado.
+* **Contexto:** Se requiere omnicanalidad (Telegram, CLI, Web) sin duplicar lógica.
+* **Decisión:** Implementar **Dispatcher y Comandos Agmósticos**.
+    1. **IChannel:** Interfaz para abstraer la salida (Consola vs Chat).
+    2. **SorenCommand:** Clases aisladas para cada acción.
+* **Consecuencia:** Søren puede operar en múltiples entornos manteniendo una única "memoria".
 
-## Contexto
-Actualmente, Søren Mirror gestiona la identidad, los proyectos y el estrés mediante archivos planos (JSON/Markdown) en el sistema de archivos local (`/data`).
-Esto presenta limitaciones:
-1. **Concurrencia:** No es seguro para escrituras simultáneas.
-2. **Seguridad:** Las credenciales y datos sensibles están en texto plano o dependen del acceso al disco.
-3. **Reutilización:** El Portfolio Web no puede acceder a los datos del CLI fácilmente sin exponer el sistema de archivos.
+## 🧭 ADR-008: Monitor de Horizonte Semántico (Solución a la Manía)
+* **Estado:** Aceptado.
+* **Contexto:** El "Hiperfoco" puede convertirse en un bucle improductivo de micro-detalles (Manía), perdiendo la visión arquitectónica.
+* **Decisión:** Implementar un sistema de **Doble Memoria (Draft vs. Memory)**.
+* **Mecanismo:**
+    * Si la densidad de detalles en `draft.md` supera un umbral sin actualizaciones en `memory.md`, se detecta "Pérdida de Horizonte".
+* **Acción:** Søren activa el modo **"Soporte Modular Horizontal"**, bloqueando la discusión de detalles y obligando al usuario a definir estructuras abstractas antes de continuar.
 
-## Decisión
-Se decide desacoplar la lógica de persistencia y autenticación en un microservicio dedicado.
-
-### Stack Tecnológico:
-1. **Backend:** NestJS (Framework de Node.js progresivo).
-2. **Base de Datos:** MySQL 8.0 (Relacional, para usuarios, logs de estrés y metadatos de proyectos).
-3. **ORM:** Prisma o TypeORM (Para manejo de tipos seguros).
-4. **Auth:** JWT (Json Web Tokens) para sesiones stateless compartidas entre CLI y Web.
-
-## Consecuencias
-### Positivas
-* **Centralización:** Un solo lugar para gestionar usuarios y permisos.
-* **Escalabilidad:** El Portfolio y el CLI consumirán la misma API. Si mejoramos el auth, mejoran ambos.
-* **Seguridad:** Los passwords estarán hasheados (bcrypt).
-
-### Negativas
-* **Complejidad:** Requiere levantar contenedores Docker para MySQL y el Servicio NestJS.
-* **Refactor:** Hay que reescribir `ProjectManager` y `IdentityManager` en el CLI para que hagan peticiones HTTP en lugar de `fs.writeFileSync`.
+## ⚖️ ADR-009: Coeficientes de Fricción Emocional (Contextual Stress)
+* **Estado:** Aceptado.
+* **Contexto:** Medir el estrés linealmente es inconsistente. Temas burocráticos agotan más rápido que temas técnicos.
+* **Decisión:** Implementar **"Fricción Variable"** en el `StressManager`.
+* **Fórmula:** $\Delta S = \text{CargaBase} \times \text{FricciónDelTema}$
+    * *Ejemplo:* `Código: 0.2` (Baja fricción, permite flow largo).
+    * *Ejemplo:* `Trámites: 0.9` (Alta fricción, alerta temprana).
