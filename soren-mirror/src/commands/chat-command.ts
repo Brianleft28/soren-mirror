@@ -6,6 +6,7 @@ import { ContextLoader } from "../core/context-loader.js";
 import { GlobalMemory } from "../core/memory.js";
 import { generateText } from "../core/gemini-client.js";
 import { runAnalysis } from "../core/analysis.js";
+import { SorenMode } from "../core/ollama-client.js";
 
 export class ChatCommand extends SorenCommand {
   name = "chat";
@@ -17,15 +18,15 @@ export class ChatCommand extends SorenCommand {
   constructor(sessionManager: SessionManager) {
     super();
     this.sessionManager = sessionManager;
-  }
 
-  async execute(args: string[], channel: IChannel): Promise<void> {
-    try {
     const model =
     this.sessionManager.getPersona?.() ||
     process.env.GEMINI_DEFAULT_MODEL ||
     "gemini-2.5-flash";
+  }
 
+  async execute(args: string[], channel: IChannel): Promise<void> {
+    try {  
       const rawText = args.join(" ").trim();
       if (!rawText) {
         await channel.send(
@@ -50,24 +51,23 @@ export class ChatCommand extends SorenCommand {
       const memory = new GlobalMemory(currentUser);
       memory.appendInteraction("USER", rawText);
 
-      // Evitamos "quemar" personal_profile en el análisis: hacemos dos "bases"
       const analysisBase = `
---- DRAFT (contexto de trabajo) ---
-${contexts.memory.draft}
+      --- DRAFT (contexto de trabajo) ---
+      ${contexts.memory.draft}
 
---- MEMORIA RECIENTE ---
-${memory.getRecentHistory(600)}
-`;
+      --- MEMORIA RECIENTE ---
+      ${memory.getRecentHistory(600)}
+      `;
 
-      const synthesisBase = `
-${contexts.personalProfile}
+            const synthesisBase = `
+      ${contexts.personalProfile}
 
---- MEMORIA PRINCIPAL ---
-${contexts.memory.principal}
+      --- MEMORIA PRINCIPAL ---
+      ${contexts.memory.principal}
 
---- MEMORIA RECIENTE ---
-${memory.getRecentHistory(1200)}
-`;
+      --- MEMORIA RECIENTE ---
+      ${memory.getRecentHistory(1200)}
+      `;
 
       // REQUIRE GEMINI KEY
       if (!process.env.GEMINI_API_KEY) {
@@ -78,37 +78,57 @@ ${memory.getRecentHistory(1200)}
       }
 
       // 1) Llamada de ANÁLISIS (pensamiento interno)
-      const analysisSystem = `
-Eres Søren (pensamiento interno). No generes una respuesta final para el usuario.
-Analiza el INPUT y devuelve:
-- 1 línea de resumen breve,
-- 2-3 riesgos/consideraciones técnicas o emocionales,
-- 1 idea accionable prioritaria.
-Mantén formato compacto (bullets) y tono técnico/empático.
-`;
-      const analysisPrompt = `${analysisSystem}\nINPUT:\n${rawText}\n\nCONTEXT:\n${analysisBase}`;
+      const analysisSystem1 = `
+        Eres Søren (pensamiento interno). No generes una respuesta final para el usuario.
+        Analiza el INPUT y devuelve:
+        - 1 línea de resumen breve,
+        - 2-3 riesgos/consideraciones técnicas o emocionales,
+        - 1 idea accionable prioritaria.
+        Mantén formato compacto (bullets) y tono técnico/empático.
+        `;
+      const analysisPrompt1 = `${analysisSystem1}\nINPUT:\n${rawText}\n\nCONTEXT:\n${analysisBase}`;
 
-      const analysisResult = await generateText(
-        analysisPrompt,
-        "gemini-2.5-flash",
-        analysisBase
+      const analysisResult = await runAnalysis(
+        analysisPrompt1,
+        contexts,
+        "gemini-2.5-flash"
       );
 
       // Guardar "pensamiento" en memoria separada (no lo escribimos al draft por defecto)
       memory.appendInteraction("SOREN-THOUGHTS", analysisResult);
-
+      
       // 2) Llamada de SÍNTESIS (respuesta al usuario) - usa el análisis como input
-      const synthesisSystem = `
-Eres Søren, asistente técnico de voz arquitectónica y compasiva.
-Genera UNA respuesta amigable y accionable para el usuario en dos secciones:
-(1) Resumen claro del problema/solución (máx 3 líneas).
-(2) Un paso accionable inmediato (1 oración).
-Usa el análisis interno como contexto, no repitas todo el análisis.
-`;
+      const persona = await this.sessionManager.getPersona();
+      let synthesisSystem = "";
+      let respuestaFinal = "";
+
+      if (persona === SorenMode.ARCHITECT) {
+        synthesisSystem = `
+          Eres Søren, asistente técnico de voz arquitectónica y fatalmente serio y argentino.
+          Genera UNA respuesta accionable para el usuario en dos secciones.:
+          (1) Resumen claro del problema/solución (max 6 líneas).
+          (2) Prioridad técnica / arquitectónica (Max. 3 líneas).
+          (3) Un paso accionable inmediato (Max. 2 oración).
+          Usa el análisis interno como contexto, no repitas todo el análisis.
+        `;
+      } else if (persona === SorenMode.WRITER) {
+        synthesisSystem = `
+          Eres Søren, un escritor y asistente empático con tono reflexivo y sereno.
+          Genera una respuesta para el usuario que contenga:
+          (1) Una reflexión corta sobre su situación (máx. 4 líneas).
+          (2) Una pregunta abierta para invitar a la introspección.
+          (3) Un pequeño consejo o pensamiento para cerrar.
+          Usa el análisis interno como guía, pero responde de forma humana y cercana.
+        `;
+      } else {
+        // Modo por defecto o si no se ha seleccionado ninguno
+        await channel.send("🔮 No has seleccionado un modo. Usa /writer o /architect.");
+        return;
+      }
 
       const synthesisPrompt = `${synthesisSystem}\nANÁLISIS INTERNO:\n${analysisResult}\n\nINPUT ORIGINAL:\n${rawText}\n\nCONTEXT:\n${synthesisBase}`;
 
-      const respuestaFinal = await generateText(
+      respuestaFinal = await generateText(
         synthesisPrompt,
         "gemini-2.5-flash",
         synthesisBase
@@ -117,16 +137,11 @@ Usa el análisis interno como contexto, no repitas todo el análisis.
       // Guardar en memoria global (Søren visible)
       memory.appendInteraction("SOREN", respuestaFinal);
 
-      // Actualizar Draft: solo append la interacción final (no thoughts)
-      const updatedDraft =
-        contexts.memory.draft +
-        `\n[USER] ${rawText}\n[SOREN] ${respuestaFinal}\n`;
-      await contextLoader.updateDraft(updatedDraft);
-
-      // Enviar al canal (respuesta final)
       await channel.send(respuestaFinal);
-    } catch (error) {
-      await this.handleError(error as Error, channel);
+    }
+    catch (error) {
+      console.error("Error en ChatCommand:", error);
+      await channel.send("❌ Ocurrió un error procesando tu solicitud.");
     }
   }
 }

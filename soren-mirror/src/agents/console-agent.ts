@@ -61,7 +61,6 @@ export class ConsoleAgent {
 
       if (input.toLowerCase() === "exit") {
         if (this.sessionManager.isActive()) {
-          // Finalizamos sesión si existe
           await this.channel.send(
             `👋 Termino la sesión ${this.sessionManager.getCurrentUser()}`
           );
@@ -76,14 +75,11 @@ export class ConsoleAgent {
       const commandName = parts[0].toLowerCase();
       const args = parts.slice(1);
 
-      // Mostrar info de sesión antes de cada comando (si hay sesión activa)
       if (this.sessionManager.isActive()) {
         await this.channel.send(this.sessionManager.getSessionInfo());
       }
 
-      // Fallback: si no hay comando registrado, lo consideramos un 'chat' libre
       if (!this.dispatcher.has(commandName)) {
-        // Pasamos el texto completo a chat como un solo argumento
         await this.dispatcher.execute("chat", [input.trim()], this.channel);
       } else {
         await this.dispatcher.execute(commandName, args, this.channel);

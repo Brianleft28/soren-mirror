@@ -3,15 +3,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { SorenOrchestrator } from "./src/orchestrator/soren-orchestator.js";
 import fs  from "fs";
+import { TelegramAgent } from "./src/agents/telegram-agent.js";
+import { ConsoleAgent } from "./src/agents/console-agent.js";
+import { SessionManager } from "./src/core/sesion-manager.js";
 
-// __dirname en ESM
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Intentar la ubicación más probable para .env (dos niveles arriba para dist)
 const candidatePaths = [
-  path.join(__dirname, "..", "..", ".env"), // root project (.env)
-  path.join(__dirname, "..", ".env"), // soren-mirror/.env
-  path.join(__dirname, ".env"), // dist/.env (no usual)
+  path.join(__dirname, "..", "..", ".env"), 
+  path.join(__dirname, "..", ".env"), 
+  path.join(__dirname, ".env") 
 ];
 
 let loadedEnvPath: string | null = null;
@@ -24,24 +25,31 @@ for (const p of candidatePaths) {
 }
 
 if (!loadedEnvPath) {
-  dotenv.config({ debug: true }); // fallback (buscar .env en CWD)
+  dotenv.config({ debug: true }); 
 }
 
-console.log("Loaded .env path:", loadedEnvPath ?? "No .env found, using process env");
 
+
+  // Crear una ÚNICA instancia de SessionManager
+  const sessionManager = new SessionManager();
 
 async function main() {
   console.log(
     "GEMINI_API_KEY:",
     process.env.GEMINI_API_KEY ? "✅ Cargado" : "❌ NO CARGADO"
   );
+  const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+  if (telegramToken) {
+    const telegramAgent = new TelegramAgent(telegramToken, sessionManager);
+    telegramAgent.start(); 
 
-  try {
-    await SorenOrchestrator.boot(process.argv);
-  } catch (error) {
-    console.error("❌ Error crítico:", error);
-    process.exit(1);
+  } else {
+    console.warn("⚠️  TELEGRAM_BOT_TOKEN no encontrado. El bot de Telegram no se iniciará.");
   }
+
+  const consoleAgent = new ConsoleAgent();
+  consoleAgent.start(); 
 }
 
-main();
+
+main().catch(console.error);
