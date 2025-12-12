@@ -11,7 +11,7 @@
     };
 
     let history: HistoryItem[] = [
-        { type: 'system', text: "Bienvenido a la terminal de Søren. Escribe '-h' para ver los comandos." }
+        { type: 'system', text: "Bienvenido a la terminal de Brian Benegas. Escribe '-h' para ver los comandos." }
     ];
     let currentPrompt = '';
     let isLoading = false;
@@ -23,13 +23,13 @@
     const commands: Record<string, (args: string[]) => Promise<void>> = {
 
         '-h': async () => {  const helpText = `<pre>Comandos disponibles:
-  <span class="command-highlight">'cls'</span>: Limpia la consola.
-  <span class="command-highlight">'exit'</span>: Cierra la terminal.
-  <span class="command-highlight">'cd [directorio]'</span>: Cambia de directorio.
-  <span class="command-highlight">'ll'</span> o <span class="command-highlight">'dir'</span>: Lista el contenido del directorio.
-  <span class="command-highlight">'soren_proyectos'</span>: Lista los proyectos documentados.
-  <span class="command-highlight">'soren_chat [proyecto]'</span>: Inicia una conversación.
-</pre>`;
+                    <span class="command-highlight">'cls'</span>: Limpia la consola.
+                    <span class="command-highlight">'exit'</span>: Cierra la terminal.
+                    <span class="command-highlight">'cd [directorio]'</span>: Cambia de directorio.
+                    <span class="command-highlight">'ll'</span> o <span class="command-highlight">'dir'</span>: Lista el contenido del directorio.
+                    <span class="command-highlight">'soren_proyectos'</span>: Lista los proyectos documentados.
+                    <span class="command-highlight">'soren_chat [tu mensaje]'</span>: Inicia una conversación sobre cualquiera de mis proyectos o habilidades!
+                    </pre>`;
             addSystemMessage(helpText);
         },
 

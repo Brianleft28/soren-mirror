@@ -10,8 +10,8 @@
   "scripts": {
     "start": "node --loader ts-node/esm interactive-soren.ts",
     "build": "tsc",
-  "dev": "npm run build && node dist/interactive-soren.js"
-},
+    "dev": "npm run build && node dist/interactive-soren.js"
+  },
   "keywords": [],
   "author": "Brian Benegas",
   "license": "ISC",
@@ -22,6 +22,7 @@
     "gray-matter": "^4.0.3",
     "inquirer": "^8.2.5",
     "ollama": "^0.6.3",
+    "telegraf": "^4.16.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

@@ -53,6 +53,14 @@
 
 <main class="container-fluid font-monospace">
     <slot />
+<div class="fixed-bottom p-3 d-flex justify-content-end" style="pointer-events: none;">
+    <button 
+        class="btn btn-dark border border-success text-success shadow-lg" 
+        style="pointer-events: auto; background-color: rgba(0,0,0,0.8);"
+        onclick={() => isTerminalVisible.set(true)} >
+        <span class="me-2">⚡</span> Hablar con Søren (AI)
+    </button>
+</div>
 </main>
 
 <!-- La terminal se renderiza aquí, fuera del <main> para que sea un overlay global -->
