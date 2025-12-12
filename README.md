@@ -7,7 +7,7 @@
 
 > *"El caos no se elimina, se indexa. La ansiedad no se calla, se procesa."*
 
-**Søren Mirror** es una extensión digital para mentes neurodivergentes. Un sistema de "segundo cerebro" diseñado para capturar el flujo de pensamiento caótico, estructurarlo y devolver claridad. No es solo un chatbot; es una infraestructura de **regulación cognitiva**.
+**Søren Mirror** es una extensión digital para mentes neurodivergentes. Un sistema de ayuda diseñado para capturar el flujo de pensamiento caótico, estructurarlo y devolver claridad. No es solo un chatbot; es una infraestructura de **regulación cognitiva**.
 
 ---
 
@@ -35,7 +35,7 @@ El sistema se divide en tres componentes principales que interactúan entre sí:
 
 ### 2. 🌐 Søren Public (La Interfaz - Portfolio)
 * **Ubicación:** `/portfolio`
-* **Tecnología:** SvelteKit, Tailwind, Terminal Emulation.
+* **Tecnología:** SvelteKit, Bootstrap, Terminal Emulation, Console Emulation.
 * **Función:**
     * **Portfolio Interactivo:** Presentación de proyectos y perfil profesional.
     * **La Consola Web:** Una terminal embebida que permite enviar comandos al *Core* (ej: "resumir mis notas de hoy", "analizar este código").
@@ -47,7 +47,6 @@ El sistema se divide en tres componentes principales que interactúan entre sí:
     * Canal de entrada de baja fricción ("Vomit Draft").
     * Captura rápida de ideas, audio y texto en movimiento.
     * Gestión de crisis y ansiedad en tiempo real.
-
 ---
 
 ## 🔄 Flujo de Datos (The Loop)
@@ -84,8 +83,9 @@ El sistema se divide en tres componentes principales que interactúan entre sí:
 Tus datos son tuyos. El sistema prioriza el almacenamiento local y la privacidad, asegurando que tu contexto personal y profesional permanezca bajo tu control.
 
 ## Arquitectura y Filosofía
-Para entender por qué tomamos estas decisiones y el propósito de los 3 Cores, leer obligatoriamente:
+Para entender por qué tomamos estas decisiones y el propósito de los 3 Cores, leer:
 
-👉 **[El Manifiesto de Arquitectura](./docs/arch/MANIFESTO.md)**
+👉 **[El Manifiesto de Arquitectura](./docs/architecture/architecture.md)**
+👉 **[Decisiones de Arquitectura (ADR)](./docs/architecture/architecture.md)**
 
-> "Un sistema sin filosofía es solo código legacy en espera."
+> Docs As Code: Para ordenar las ideas, es importante mantener organizado el código.
