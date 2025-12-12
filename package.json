@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "filters": "^1.0.6",
-    "telegraf": "^4.16.3"
-  }
-}
