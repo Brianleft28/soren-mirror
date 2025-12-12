@@ -1,131 +1,69 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import fs from 'fs';
-import path from 'path';
+import { env } from '$env/dynamic/private';
 
-// --- CONFIGURACIÓN ---
-const OLLAMA_URL = import.meta.env.VITE_OLLAMA_URL || 'http://localhost:11434/api/generate';
-const OLLAMA_MODEL = import.meta.env.VITE_OLLAMA_MODEL || 'dolphin-mistral';
-const PROMPT_LIMIT = 5; // Límite de interacciones por IP
+// Importamos el archivo de memoria como texto crudo usando Vite
+// Ajusta la cantidad de '../' según la estructura final, esto asume src/routes/api/chat/
+import memoryContent from '../../../../static/data/public_memory.md?raw';
 
-// Rutas base para lectura de archivos (Contexto)
-const DOCS_BASE = path.join(process.cwd(), '..', 'docs');
-const PROYECTOS_DIR = path.join(DOCS_BASE, 'proyectos');
-const CONTEXT_DIR = path.join(DOCS_BASE, 'context');
-const PERSONA_PATH = path.join(DOCS_BASE, 'vision', 'public_persona.md');
+const MODEL_NAME = 'gemini-1.5-flash';
+const LIMIT_PER_IP = 15; 
 
-console.log(`[API CHAT] Usando modelo Ollama: ${OLLAMA_MODEL} en ${OLLAMA_URL}`);
-console.log(`[API CHAT] Límite de prompts por IP: ${PROMPT_LIMIT}`);
-console.log(`[API CHAT] Cargando personalidad desde: ${PERSONA_PATH}`);
-console.log(`[API CHAT] Cargando proyectos desde: ${PROYECTOS_DIR}`);
-console.log(`[API CHAT] Cargando contexto desde: ${CONTEXT_DIR}`);
-
-// Memoria volátil de interacciones (IP -> contador)
 const interactions: Record<string, number> = {};
 
-/**
- * GET: Lista los proyectos disponibles para el menú del Frontend
- */
-export const GET: RequestHandler = async () => {
-    try {
-        if (!fs.existsSync(PROYECTOS_DIR)) {
-            return json({ proyectos: [] });
-        }
-
-        const proyectos = fs
-            .readdirSync(PROYECTOS_DIR, { withFileTypes: true })
-            .filter((dirent) => dirent.isFile() && dirent.name.endsWith('.md'))
-            .map((dirent) => dirent.name.replace('.md', ''));
-
-        return json({ proyectos });
-    } catch (error) {
-        console.error('[API GET PROYECTOS ERROR]', error);
-        return json({ error: 'Error listando proyectos' }, { status: 500 });
-    }
-};
-/**
- * POST: Procesa el chat usando OLLAMA con rate limiting.
- */
 export const POST: RequestHandler = async ({ request, getClientAddress }) => {
+    // 1Rate Limiting Simple
+    const clientIp = getClientAddress();
+    const currentUsage = interactions[clientIp] || 0;
+
+    if (currentUsage >= LIMIT_PER_IP) {
+        return json({
+            response: "🛑 [SISTEMA] Límite de consultas alcanzado para tu IP. Para continuar la charla, sentite libre de contactarme directamente."
+        });
+    }
+
     try {
-        // Rate Limiting por IP
-        const clientIp = getClientAddress();
-        const promptCount = interactions[clientIp] || 0;
-
-        if (promptCount >= PROMPT_LIMIT) {
-            return json(
-                { error: `Límite de ${PROMPT_LIMIT} prompts alcanzado. Gracias por probar el asistente.` },
-                { status: 429 } // 429 Too Many Requests
-            );
+        const apiKey = env.GEMINI_API_KEY;
+        if (!apiKey) {
+            console.error("❌ FATAL: No se encontró GEMINI_API_KEY en las variables de entorno.");
+            return json({ response: "Error del sistema: Credenciales de IA no configuradas." });
         }
 
-        const { prompt, project } = await request.json();
-        
+        const { prompt } = await request.json();
+
         if (!prompt) {
-            return json({ error: 'El prompt es requerido' }, { status: 400 });
+             return json({ response: "Error: No se recibió ningún mensaje." });
         }
 
-        // Cargar Personalidad y Contexto
-        let systemPrompt = fs.existsSync(PERSONA_PATH) ? fs.readFileSync(PERSONA_PATH, 'utf-8') : '';
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-        // Cargar contexto del perfil personal
-        const profilePath = path.join(CONTEXT_DIR, 'personal_profile.md');
-        if (fs.existsSync(profilePath)) {
-            systemPrompt += `\n\n--- CONTEXTO SOBRE EL AUTOR ---\n${fs.readFileSync(profilePath, 'utf-8')}`;
-        }
+        // Inyectamos toda la memoria estática en cada petición (Stateless)
+        const fullPrompt = `
+        ${memoryContent}
 
-        // Cargar contexto del proyecto si se especificó
-         if (project) {
-            const projectDocPath = path.join(PROYECTOS_DIR, `${project}.md`);
-            if (fs.existsSync(projectDocPath)) {
+        ---
+        CONTEXTO DE LA SESIÓN:
+        El usuario es un visitante del portfolio (posible reclutador o colega).
 
-                systemPrompt += `\n\n--- CONTEXTO DEL PROYECTO: ${project} ---\n${fs.readFileSync(projectDocPath, 'utf-8')}`;
-            }
-        }
+        MENSAJE DEL USUARIO:
+        "${prompt}"
 
-        // --- DEBUG: ESTO TE MOSTRARÁ LO QUE "VE" OLLAMA ---
-        console.log("----------------------------------------------------");
-        console.log("🛠️ PROMPT REAL ENVIADO A OLLAMA:");
-        console.log("SYSTEM PROMPT (PRIMEROS 500 chars):", systemPrompt.substring(0, 500) + "...");
-        console.log("USER PROMPT:", prompt);
-        console.log("----------------------------------------------------");
-        // ----------
+        TU RESPUESTA (Responde como Søren, mantén el formato texto plano para terminal):
+        `;
 
-         // Llamada a Ollama
-        const ollamaResponse = await fetch(OLLAMA_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                model: OLLAMA_MODEL,
-                prompt: prompt,
-                system: systemPrompt,
-                stream: true // Correcto, mantenemos el streaming
-            })
-        });
+        // 3. Generación
+        const result = await model.generateContent(fullPrompt);
+        const responseText = result.response.text();
 
-        if (!ollamaResponse.ok) {
-            const errorBody = await ollamaResponse.json();
-            throw new Error(errorBody.error || `Error en la comunicación con Ollama: ${ollamaResponse.statusText}`);
-        }
-         // No usamos response.json(). En su lugar, tomamos el cuerpo del stream
-        // y lo devolvemos directamente al cliente. SvelteKit se encarga del resto.
-        if (!ollamaResponse.body) {
-            throw new Error("La respuesta de Ollama no tenía cuerpo (body).");
-        }
+        // Actualizar contador de uso
+        interactions[clientIp] = currentUsage + 1;
 
-        interactions[clientIp] = promptCount + 1;
-        console.log(`[INFO] Prompt de ${clientIp} (count: ${interactions[clientIp]}). Iniciando stream...`);
+        return json({ response: responseText });
 
-        // Devolvemos un objeto Response que contiene el stream de Ollama.
-        return new Response(ollamaResponse.body, {
-            headers: {
-                'Content-Type': 'text/plain; charset=utf-8'
-            }
-        });
-        // --- FIN DE LA CORRECCIÓN ---
-
-    } catch (error: any) {
-        console.error('[API CHAT ERROR]', error);
-        return json({ error: 'Error procesando la solicitud' }, { status: 500 });
+    } catch (error) {
+        console.error('[GEMINI API ERROR]', error);
+        return json({ response: "Error de conexión con el núcleo cognitivo. Por favor, intenta nuevamente en unos segundos." });
     }
 };
