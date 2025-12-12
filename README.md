@@ -1,4 +1,4 @@
-# 🪞 Søren Mirror: Sistema Operativo Cognitivo (Neurodivergent-First)
+# 🪞 Søren Mirror:  Una IA que nos ayuda a autoregular nuestros tiempos y ansiedades (Neurodivergent-First)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
@@ -77,7 +77,7 @@ Aunque usamos modelos de IA en la nube para el razonamiento, **la memoria (tu co
 Para entender las decisiones detrás de separar el Portfolio del Core y el diseño de personalidades:
 
 👉 **[Leer el Manifiesto de Arquitectura](./docs/architecture/architecture.md)**
-👉 **[Leer ](./docs/architecture/decisions.md)**
 👉 **[Leer el Registro de Decisiones de Arquitectura (ADR)](./docs/architecture/decisions.md)**
+👉 **[Leer el Manifiesto General Del Proyecto](./docs/architecture/manifest.md)**
 
-> "Un sistema sin filosofía es solo código legacy en espera."
+> ** Utilizamos los principios de Docs As Code, no se pica una linea de código hasta primero documentar"**
