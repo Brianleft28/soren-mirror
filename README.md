@@ -1,4 +1,4 @@
-# 🪞 Søren Mirror:  Una IA que nos ayuda a autoregular nuestros tiempos y ansiedades (Neurodivergent-First)
+# 🪞 Søren Mirror: Exocorteza Digital (Neurodivergent-First)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
 ![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
