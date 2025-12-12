@@ -1,12 +1,11 @@
-// ...existing code...
 import { SorenCommand } from "../dispatcher/soren-command.js";
 import { IChannel } from "../channels/IChanel.js";
 import { SessionManager } from "../core/sesion-manager.js";
 import { ContextLoader } from "../core/context-loader.js";
 import { GlobalMemory } from "../core/memory.js";
 import { generateText } from "../core/gemini-client.js";
-import { runAnalysis } from "../core/analysis.js";
-import { SorenMode } from "../core/ollama-client.js";
+import { StressManager } from "../core/stress-manager.js"; //
+import { SorenMode } from "../core/gemini-client.js"; // Asumiendo que moviste el Enum aquí, si no, ajusta el import
 
 export class ChatCommand extends SorenCommand {
   name = "chat";
@@ -18,15 +17,12 @@ export class ChatCommand extends SorenCommand {
   constructor(sessionManager: SessionManager) {
     super();
     this.sessionManager = sessionManager;
-
-    const model =
-    this.sessionManager.getPersona?.() ||
-    process.env.GEMINI_DEFAULT_MODEL ||
-    "gemini-2.5-flash";
   }
 
   async execute(args: string[], channel: IChannel): Promise<void> {
-    try {  
+    const startTime = Date.now(); // ⏱️ Iniciamos el reloj
+
+    try {
       const rawText = args.join(" ").trim();
       if (!rawText) {
         await channel.send(
@@ -43,15 +39,31 @@ export class ChatCommand extends SorenCommand {
         return;
       }
 
-      // Cargar contexto dual para el usuario
+      // 1. Carga de Sistemas y Métricas
       const contextLoader = new ContextLoader(currentUser);
       const contexts = await contextLoader.loadAll();
-
-      // Memoria global
       const memory = new GlobalMemory(currentUser);
+      
+      // -- ESTRÉS --
+      // Instanciamos el manager y calculamos el impacto de este mensaje
+      const stressManager = new StressManager(currentUser);
+      const currentStress = stressManager.updateAndGetStress(rawText);
+
+      // Registrar input
       memory.appendInteraction("USER", rawText);
 
+      // --- 2. PREPARACIÓN DE CONTEXTO ---
+
+      // Inyectamos Horizonte
+      const horizonInfo = contexts.memory.horizonDetected
+        ? `⚠️ ALERTA DE HORIZONTE: Pérdida de foco detectada. Análisis: ${contexts.memory.horizonAnalysis}`
+        : `✅ Horizonte Claro.`;
+
       const analysisBase = `
+      --- ESTADO COGNITIVO ---
+      ${horizonInfo}
+      ❤️ Nivel de Estrés Usuario: ${currentStress}/10
+
       --- DRAFT (contexto de trabajo) ---
       ${contexts.memory.draft}
 
@@ -59,7 +71,7 @@ export class ChatCommand extends SorenCommand {
       ${memory.getRecentHistory(600)}
       `;
 
-            const synthesisBase = `
+      const synthesisBase = `
       ${contexts.personalProfile}
 
       --- MEMORIA PRINCIPAL ---
@@ -69,79 +81,104 @@ export class ChatCommand extends SorenCommand {
       ${memory.getRecentHistory(1200)}
       `;
 
-      // REQUIRE GEMINI KEY
-      if (!process.env.GEMINI_API_KEY) {
-        await channel.send(
-          "❌ GEMINI_API_KEY no definida. No puedo responder usando Gemini."
-        );
-        return;
-      }
-
-      // 1) Llamada de ANÁLISIS (pensamiento interno)
-      const analysisSystem1 = `
-        Eres Søren (pensamiento interno). No generes una respuesta final para el usuario.
-        Analiza el INPUT y devuelve:
-        - 1 línea de resumen breve,
-        - 2-3 riesgos/consideraciones técnicas o emocionales,
-        - 1 idea accionable prioritaria.
-        Mantén formato compacto (bullets) y tono técnico/empático.
+      // --- 3. FASE DE ANÁLISIS (Subconsciente) ---
+      
+      const analysisSystem = `
+        Eres el subconsciente de Søren. NO generes respuesta al usuario.
+        Analiza el INPUT considerando el ESTRÉS (${currentStress}/10).
+        
+        OBJETIVOS:
+        1. ¿El usuario está redundando? (Ver Horizonte).
+        2. Si el estrés es alto (>5), sugiere contención (Writer). Si es bajo, estructura técnica (Architect).
+        3. Detecta "Puntos de Consolidación" (ideas que merecen ir al perfil).
         `;
-      const analysisPrompt1 = `${analysisSystem1}\nINPUT:\n${rawText}\n\nCONTEXT:\n${analysisBase}`;
 
-      const analysisResult = await runAnalysis(
-        analysisPrompt1,
-        contexts,
-        "gemini-2.5-flash"
+      const analysisPrompt = `${analysisSystem}\nINPUT:\n${rawText}\n\nCONTEXT:\n${analysisBase}`;
+      
+      // Usamos el modelo PRO para pensar (más inteligente)
+      const analysisResult = await generateText(
+        analysisPrompt,
+        "gemini-2.5-pro", 
+        analysisBase
       );
 
-      // Guardar "pensamiento" en memoria separada (no lo escribimos al draft por defecto)
       memory.appendInteraction("SOREN-THOUGHTS", analysisResult);
+
+      // --- 4. FASE DE SÍNTESIS (Respuesta) ---
       
-      // 2) Llamada de SÍNTESIS (respuesta al usuario) - usa el análisis como input
       const persona = await this.sessionManager.getPersona();
       let synthesisSystem = "";
-      let respuestaFinal = "";
+      let modelUsed = "gemini-2.5-flash"; // Para el footer
 
       if (persona === SorenMode.ARCHITECT) {
         synthesisSystem = `
-          Eres Søren, asistente técnico de voz arquitectónica y fatalmente serio y argentino.
-          Genera UNA respuesta accionable para el usuario en dos secciones.:
-          (1) Resumen claro del problema/solución (max 6 líneas).
-          (2) Prioridad técnica / arquitectónica (Max. 3 líneas).
-          (3) Un paso accionable inmediato (Max. 2 oración).
-          Usa el análisis interno como contexto, no repitas todo el análisis.
+          IDENTIDAD: Eres Søren Architect.
+          TONO: Rioplatense, técnico, cínico pero brillante.
+          ESTRÉS DETECTADO: ${currentStress}/10.
+          
+          TU MISIÓN:
+          Si el estrés es alto, sé conciso y resolutivo (baja la carga cognitiva).
+          Si es bajo, desafía al usuario con mejores prácticas.
+          Prioriza la arquitectura y el orden.
+          
+          ESTRUCTURA:
+          1. Diagnóstico.
+          2. Solución / Código.
+          3. Cierre técnico.
         `;
       } else if (persona === SorenMode.WRITER) {
         synthesisSystem = `
-          Eres Søren, un escritor y asistente empático con tono reflexivo y sereno.
-          Genera una respuesta para el usuario que contenga:
-          (1) Una reflexión corta sobre su situación (máx. 4 líneas).
-          (2) Una pregunta abierta para invitar a la introspección.
-          (3) Un pequeño consejo o pensamiento para cerrar.
-          Usa el análisis interno como guía, pero responde de forma humana y cercana.
+          IDENTIDAD: Eres Søren Writer.
+          TONO: Existencialista, argentino, nocturno.
+          ESTRÉS DETECTADO: ${currentStress}/10.
+          
+          TU MISIÓN:
+          Eres un espejo emocional.
+          Si el estrés es alto, valida su dolor pero ofrece una salida creativa.
+          Usa metáforas de ciudad y jazz.
+          
+          ESTRUCTURA:
+          1. Empatía cruda.
+          2. Pregunta reflexiva.
+          3. Cierre poético.
         `;
       } else {
-        // Modo por defecto o si no se ha seleccionado ninguno
-        await channel.send("🔮 No has seleccionado un modo. Usa /writer o /architect.");
-        return;
+        synthesisSystem = "Eres Søren. Responde directo con personalidad argentina.";
       }
 
-      const synthesisPrompt = `${synthesisSystem}\nANÁLISIS INTERNO:\n${analysisResult}\n\nINPUT ORIGINAL:\n${rawText}\n\nCONTEXT:\n${synthesisBase}`;
+      const synthesisPrompt = `${synthesisSystem}\n
+      ANÁLISIS DE SITUACIÓN:
+      ${analysisResult}
+      
+      INPUT:
+      ${rawText}
+      
+      CONTEXTO:
+      ${synthesisBase}
+      `;
 
-      respuestaFinal = await generateText(
+      const respuestaFinal = await generateText(
         synthesisPrompt,
-        "gemini-2.5-flash",
+        modelUsed,
         synthesisBase
       );
 
-      // Guardar en memoria global (Søren visible)
       memory.appendInteraction("SOREN", respuestaFinal);
 
-      await channel.send(respuestaFinal);
-    }
-    catch (error) {
+      const updatedDraft = contexts.memory.draft + `\n[USER] ${rawText}\n[SOREN] ${respuestaFinal}\n`;
+      await contextLoader.updateDraft(updatedDraft);
+
+      // --- 5. FOOTER CON TELEMETRÍA ---
+      const endTime = Date.now();
+      const latency = ((endTime - startTime) / 1000).toFixed(2);
+      
+      const footer = `\n\n\`⚡ ${latency}s | 🌡️ Stress: ${currentStress}/10 | 🧠 ${modelUsed}\``;
+
+      await channel.send(respuestaFinal + footer);
+
+    } catch (error) {
       console.error("Error en ChatCommand:", error);
-      await channel.send("❌ Ocurrió un error procesando tu solicitud.");
+      await channel.send("❌ Error crítico en el núcleo de Søren.");
     }
   }
 }

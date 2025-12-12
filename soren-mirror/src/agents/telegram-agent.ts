@@ -9,6 +9,7 @@ import { LocalAuthManager } from "../core/auth.js"; // ✅ Tu sistema de auth lo
 import { ChatCommand } from "../commands/chat-command.js";
 import { TelegramChannel } from "../channels/telegram-channel.js";
 import { SorenMode } from "../core/gemini-client.js";
+import { ConsolidateCommand } from "../commands/consolidate-command.js"; // <-- Importar
 
 const TELEGRAM_MAP_PATH = path.join(process.cwd(), "data", "telegram_users.json");
 
@@ -43,6 +44,7 @@ export class TelegramAgent {
 
   private registerCommands() {
     this.dispatcher.register("chat", new ChatCommand(this.sessionManager));
+    this.dispatcher.register("consolidate", new ConsolidateCommand(this.sessionManager));
   }
 
   private setupListeners() {
@@ -151,18 +153,23 @@ export class TelegramAgent {
 
 
       const channel = new TelegramChannel(ctx);
-      await channel.showTyping()
-
-      console.log(`📩 Telegram Input (${username}): ${text}`);
+      // Telegram corta el "typing" a los 5s. Creamos un loop para renovarlo.
+      await ctx.sendChatAction("typing"); 
+      const typingLoop = setInterval(async () => {
+        try {
+          await ctx.sendChatAction("typing");
+        } catch (e) {
+        }
+      }, 4000); // Cada 4 segundos
 
       try {
-        // Ejecutamos tu comando 'chat' existente
-        console.log("Ejecutando comando 'chat' para Telegram...", { username, text });
         await this.dispatcher.execute("chat", [text], channel);
-
       } catch (error) {
-        console.error("Error procesando mensaje:", error);
-        ctx.reply("❌ Error crítico en el núcleo de Søren.");
+        console.error("Error:", error);
+        ctx.reply("❌ Error en el núcleo.");
+      } finally {
+        // MUY IMPORTANTE: Matar el loop siempre, pase lo que pase
+        clearInterval(typingLoop);
       }
     });
   }

@@ -1,4 +1,5 @@
 // src/channels/telegram-channel.ts
+import { ca } from "date-fns/locale";
 import { IChannel } from "./IChanel.js";
 import { Context } from "telegraf";
 
@@ -20,17 +21,24 @@ export class TelegramChannel implements IChannel {
    * Envia el mensaje de vuelta a Telegram.
    * Detecta si es Markdown para formatearlo correctamente.
    */
-  async send(message: string): Promise<void> {
+async send(message: string): Promise<void> {
     try {
-      // Intentamos enviar con formato Markdown primero si detectamos sintaxis
-      if (message.includes("**") || message.includes("`")) {
-        await this.ctx.replyWithMarkdownV2(message);
-      } else {
-        await this.ctx.reply(message);
-      }
+      // 🛠️ TRADUCTOR GEMINI -> TELEGRAM LEGACY
+      let cleanMessage = message;
+      // Convertir listas con asterisco (* Item) a guiones (- Item)
+      // Telegram confunde "* " con inicio de negrita sin cerrar.
+      cleanMessage = cleanMessage.replace(/^ \* /gm, "- ");
+      cleanMessage = cleanMessage.replace(/^\* /gm, "- ");
+      // Convertir Negrita estándar (**Texto**) a Legacy (*Texto*)
+      cleanMessage = cleanMessage.replace(/\*\*/g, "*");
+      // Convertir Negrita alternativa (__Texto__) a Legacy (*Texto*)
+      cleanMessage = cleanMessage.replace(/__/g, "*");
+      // Intentamos enviar con Legacy Markdown
+      // Es menos estricto que V2, solo pide cerrar las * y _
+      await this.ctx.reply(cleanMessage, { parse_mode: "Markdown" });
     } catch (error) {
-      // Fallback a texto plano si falla el markdown (común con caracteres especiales)
-      console.error("Error enviando MD a Telegram, enviando plano:", error);
+      console.warn("⚠️ Falló Markdown. Reintentando en plano.");
+      // Fallback: Si falla (ej: un * sin cerrar), mandamos plano para no perder el mensaje
       await this.ctx.reply(message);
     }
   }
