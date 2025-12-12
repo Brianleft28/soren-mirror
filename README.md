@@ -1,95 +1,91 @@
+# 🪞 Søren Mirror: Sistema Operativo Cognitivo (Neurodivergent-First)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)
-![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![Google Gemini](https://img.shields.io/badge/Google%20Gemini-4285F4?style=for-the-badge&logo=google&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-Local%20AI-000000?style=for-the-badge&logo=ollama&logoColor=white)
-![Telegram](https://img.shields.io/badge/Telegram-WIP-2CA5E0?style=for-the-badge&logo=telegram&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)
 
-# 🪞 Søren Mirror: Sistema Operativo para la Mente Neurodivergente
+> *"El caos no se elimina, se indexa. La ansiedad no se calla, se procesa."*
 
-> *"No soy un bot corporativo. Soy tu espejo con memoria y empatía."*
-
-**Søren Mirror** es una plataforma de agentes autónomos diseñada para actuar como un **Segundo Cerebro**. Su arquitectura híbrida (Nube + Local) permite gestionar la escritura creativa, la arquitectura de software y la regulación emocional, todo bajo un entorno de privacidad estricta.
+**Søren Mirror** es una extensión digital para mentes neurodivergentes. Un sistema de "segundo cerebro" diseñado para capturar el flujo de pensamiento caótico, estructurarlo y devolver claridad. No es solo un chatbot; es una infraestructura de **regulación cognitiva**.
 
 ---
 
-## 🎭 El Sistema Multi-Personalidad
+## 🎯 Estado Actual del Proyecto: Fase de Integración
 
-Søren no es una sola voz. El sistema cambia de "máscara" según tu necesidad cognitiva del momento:
+Actualmente, el desarrollo se centra en fusionar la lógica del núcleo (IA) con la interfaz visual web.
 
-### 1. 🏗️ Søren Architect (Modo "Søren Code")
-* **Perfil:** Hacker "Black Hat", Arquitecto de Software Senior y pragmático.
-* **Estilo:** Rioplatense, técnico, cínico y directo.
-* **Misión:** Resolver deuda técnica, criticar código spaghetti y proponer arquitecturas escalables. "Si el código es basura, te lo digo".
-
-### 2. ✒️ Søren Writer (Modo "El Editor")
-* **Perfil:** Editor literario existencialista de bar nocturno.
-* **Estilo:** Melancólico, profundo y empático.
-* **Misión:** Transformar el dolor en arte. Utiliza técnicas de mayéutica para desbloquear la escritura creativa, ficcionando la realidad del usuario.
-
-### 3. 🌐 Søren Public (Modo "Portfolio")
-* **Perfil:** Interfaz pública (estilo *Mr. Robot*).
-* **Misión:** Presentar al creador (Brian) ante el mundo exterior/reclutadores, protegiendo los datos sensibles.
+* **Objetivo Inmediato:** Conectar el `Core` (Lógica en Node.js) con el `Portfolio` (SvelteKit) mediante una API intermediaria.
+* **Visión:** Poder interactuar con el cerebro de Søren directamente desde la terminal web del portfolio.
 
 ---
 
-## 🧠 Núcleo Cognitivo (TDAH Friendly)
+## 🧠 Arquitectura del Sistema
 
-El sistema está diseñado específicamente para mitigar síntomas de neurodivergencia:
+El sistema se divide en tres componentes principales que interactúan entre sí:
 
-* **⏳ Chronos (Ceguera Temporal):** Gestión de fatiga estocástica. Calcula probabilidades de agotamiento en lugar de usar timers rígidos.
-* **🔥 StressManager (Desregulación Emocional):** Monitorea la "temperatura" del chat y predice picos de estrés basados en historial.
-* **📂 ProjectManager (Permanencia de Objeto):** Mantiene vivos los contextos de los proyectos aunque no los veas.
+### 1. 🧬 Søren Core (El Cerebro - Backend)
+* **Ubicación:** `/soren-mirror`
+* **Tecnología:** Node.js, TypeScript, Google Gemini 2.5.
+* **Función:**
+    * Procesamiento de Lenguaje Natural (NLP).
+    * Gestión de Memoria Vectorial (RAG) y Contexto.
+    * Manejo de Personalidades (Code, Writer, Architect).
+    * **API Layer (En Desarrollo):** Puente HTTP para recibir comandos del frontend.
 
+### 2. 🌐 Søren Public (La Interfaz - Portfolio)
+* **Ubicación:** `/portfolio`
+* **Tecnología:** SvelteKit, Tailwind, Terminal Emulation.
+* **Función:**
+    * **Portfolio Interactivo:** Presentación de proyectos y perfil profesional.
+    * **La Consola Web:** Una terminal embebida que permite enviar comandos al *Core* (ej: "resumir mis notas de hoy", "analizar este código").
+    * **Visualización:** Dashboards de métricas personales y estado del sistema.
+
+### 3. 📱 Søren Private (El Compañero - Telegram Bot)
+* **Estado:** Operativo / Mantenimiento.
+* **Función:**
+    * Canal de entrada de baja fricción ("Vomit Draft").
+    * Captura rápida de ideas, audio y texto en movimiento.
+    * Gestión de crisis y ansiedad en tiempo real.
 
 ---
-## 🚧 Roadmap: La Expansión Móvil (En Desarrollo)
 
-El sistema está evolucionando hacia una arquitectura omnicanal. El próximo hito es la integración total con **Telegram Bot API**.
+## 🔄 Flujo de Datos (The Loop)
 
-* **📱 Søren en tu Bolsillo:** Portabilidad del 100% de las funcionalidades del CLI a una interfaz de chat móvil.
-* **🔐 Auth Remota:** Sistema de Login seguro vía Telegram para acceder a las personalidades privadas (Writer/Architect) desde cualquier lugar.
-* **☁️ Sincronización:** Posibilidad de iniciar un borrador ("draft") en el móvil mientras caminas y terminarlo en la PC con el CLI.
-* **🔔 Notificaciones de Estrés:** Si *Chronos* detecta fatiga, Søren te enviará un mensaje proactivo al celular sugiriendo un descanso.
-
-
-## 📚 Documentación Técnica
-
-Para entender la ingeniería detrás del espejo:
-
-* **📖 [Manifiesto Técnico y Funcional](docs/soren-mirror/technical-manifesto.md)**: Explicación detallada de las variables medibles y el enfoque clínico/técnico.
-* **🗺️ [Arquitectura de Flujo de Datos](docs/soren-mirror/architecture/proyect-system.md)**: Diagrama visual (Mermaid) de cómo viaja la información desde el CLI hasta el almacenamiento seguro.
+1.  **Input:** El usuario ingresa un comando en la **Consola Web** (Søren Public) o un mensaje en **Telegram** (Søren Private).
+2.  **Procesamiento:** La **API Intermediaria** recibe el input y lo pasa al **Agente Orquestador** del Core.
+3.  **Razonamiento:** El Core consulta la **Memoria (RAG)** y decide qué personalidad debe responder (Code, Writer, etc.).
+4.  **Output:** La respuesta se devuelve a la interfaz correspondiente (Terminal Web o Chat de Telegram).
 
 ---
 
-## 🔒 Privacidad y "Búnker" de Datos
+## 🛠️ Stack Tecnológico
 
-Tus historias, traumas y códigos privados **NUNCA** salen de tu máquina sin tu permiso explícito.
-El sistema crea una estructura de archivos aislada por usuario:
+* **Frontend:** SvelteKit + Vite (Renderizado rápido y reactivo).
+* **Backend:** Node.js + TypeScript (Lógica robusta).
+* **IA:** Google Gemini 2.5 Flash (Razonamiento y Generación).
+* **Base de Datos/Memoria:** Sistema de archivos local (Markdown/JSON) + Vector Store (para RAG).
 
-```bash
-data/users/{tu-apodo}/
-├── projects/
-│   └── {nombre-novela}/
-│       ├── draft.md       # El cuerpo (lo que escribes)
-│       ├── memory.md      # El alma (contexto emocional/privado)
-│       ├── style.md       # La voz (instrucciones de tono)
-│       └── metadata.json  # La estructura lógica
 ---
-```
-## 🚀 Instalación y Uso
 
-### Requisitos
-*   Docker & Docker Compose
-*   Node.js v20+
-*   Una API Key de Google Gemini
-*   (Opcional) GPU para correr Ollama localmente
+## 🚀 Roadmap Corto Plazo
 
-### Despliegue Rápido
+- [x] Estructura base del Monorepo.
+- [x] Implementación básica de Agentes (Console, Telegram).
+- [x] UI del Portfolio con emulador de Terminal.
+- [ ] **Crear API Server en `soren-mirror` (Express/Fastify).**
+- [ ] **Conectar `portfolio/api/chat` con `soren-mirror/api`.**
+- [ ] Desplegar versión Alpha de Søren Public.
 
-**1. Clonar y Configurar:**
-````bash
-git clone https://github.com/brianleft28/soren-mirror.git
-cd soren-mirror
-cp .env.example .env
-# Edita el archivo .env con tus credenciales
+---
+
+## 🔒 Filosofía Local-First
+
+Tus datos son tuyos. El sistema prioriza el almacenamiento local y la privacidad, asegurando que tu contexto personal y profesional permanezca bajo tu control.
+
+## Arquitectura y Filosofía
+Para entender por qué tomamos estas decisiones y el propósito de los 3 Cores, leer obligatoriamente:
+
+👉 **[El Manifiesto de Arquitectura](./docs/arch/MANIFESTO.md)**
+
+> "Un sistema sin filosofía es solo código legacy en espera."

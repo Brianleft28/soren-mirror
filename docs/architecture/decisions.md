@@ -32,11 +32,46 @@
 * **Mecanismo:**
     * Si la densidad de detalles en `draft.md` supera un umbral sin actualizaciones en `memory.md`, se detecta "Pérdida de Horizonte".
 * **Acción:** Søren activa el modo **"Soporte Modular Horizontal"**, bloqueando la discusión de detalles y obligando al usuario a definir estructuras abstractas antes de continuar.
+# ADR-009: Implementación de Arquitectura Cognitiva RAG y Separación de Dominios
 
-## ⚖️ ADR-009: Coeficientes de Fricción Emocional (Contextual Stress)
-* **Estado:** Aceptado.
-* **Contexto:** Medir el estrés linealmente es inconsistente. Temas burocráticos agotan más rápido que temas técnicos.
-* **Decisión:** Implementar **"Fricción Variable"** en el `StressManager`.
-* **Fórmula:** $\Delta S = \text{CargaBase} \times \text{FricciónDelTema}$
-    * *Ejemplo:* `Código: 0.2` (Baja fricción, permite flow largo).
-    * *Ejemplo:* `Trámites: 0.9` (Alta fricción, alerta temprana).
+* **Estado:** Propuesto
+* **Fecha:** 2025-12-11
+* **Contexto:** Neurodivergencia, Gestión de TDAH, Portfolio Público.
+
+## 1. Contexto y Problema
+El sistema actual (Søren Mirror) opera reactivamente basado en logs de chat y un perfil estático. 
+Se detecta la necesidad de:
+1.  **Asistencia Terapéutica Activa:** El sistema debe conocer teoría clínica (ej: Russell Barkley sobre percepción del tiempo) para detectar patrones nocivos (sesiones largas, rumiación) y ofrecer consejos fundamentados, no alucinados.
+2.  **Separación de Preocupaciones:** El "Caos Privado" (gestión personal/bot) se mezcla con la "Cara Pública" (Portfolio).
+3.  **Identidad Dinámica:** Los saludos y el tono deben adaptarse dinámicamente al usuario y su estado, no ser strings estáticos.
+
+## 2. Decisión Arquitectónica
+
+Se decide evolucionar Søren Mirror hacia una **Arquitectura Híbrida RAG (Retrieval-Augmented Generation)** con separación de dominios.
+
+### A. Núcleo Cognitivo (Søren Core)
+Implementaremos un módulo `KnowledgeBase` que utilice **Embeddings de Gemini** para indexar literatura técnica (PDFs/MDs de Barkley, Clean Code, etc.) en un almacenamiento vectorial local (`vector_store.json`).
+* **Trigger:** Antes de cada respuesta del `ChatCommand`, el sistema consultará este vector store si detecta palabras clave de riesgo (tiempo, dolor, bloqueo).
+
+### B. Separación de Dominios (Public vs Private)
+* **Søren Private (Telegram Bot):** Interfaz de entrada "sucia" y rápida. Gestión de estrés, draft y consolidación.
+* **Søren Public (SvelteKit Portfolio):** Interfaz de salida "limpia". Consumirá únicamente archivos JSON/MD procesados y movidos a una carpeta `public_content/` mediante el comando `/publish`.
+
+### C. Sistema de Personalidad Dinámica
+Se reemplazan los prompts estáticos por un `PersonaEngine` que inyecta contexto en tiempo real:
+* **Input:** `Nickname`, `Mood` (Writer/Architect), `TimeOfDay`, `StressLevel`.
+* **Output:** Saludo y Tono ajustados (ej: "Che Brian, son las 3AM, ¿otra vez el código?").
+
+## 3. Consecuencias
+* **Positivas:**
+    * Søren podrá citar a Barkley para justificar una interrupción de sesión.
+    * El Portfolio se mantiene impoluto, leyendo datos estáticos generados por el Bot.
+    * Escalabilidad: La base de conocimiento puede crecer infinitamente sin reentrenar el modelo.
+* **Negativas:**
+    * Aumento de latencia (1-2s extra) por la búsqueda vectorial antes de responder.
+    * Requiere gestión de tokens (costo de API) para embeddings grandes.
+
+## 4. Implementación Técnica
+* Librería de Embeddings: `@google/generative-ai` (`text-embedding-004`).
+* Almacenamiento Vectorial: Archivo JSON local (Simplicidad > Complejidad de DB).
+* Parser de PDF: `pdf-parse` para ingestar libros.
