@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
+    import { onMount, tick } from 'svelte';
     import { isTerminalVisible } from '$lib/stores/ui';
     import { currentPath } from '$lib/stores/terminal';
     import { fileSystemData, type FileSystemNode } from '$lib/data/file-system';
@@ -22,16 +22,19 @@
 
     const commands: Record<string, (args: string[]) => Promise<void>> = {
 
-        '-h': async () => {  const helpText = `<pre>Comandos disponibles:
-                    <span class="command-highlight">'cls'</span>: Limpia la consola.
-                    <span class="command-highlight">'exit'</span>: Cierra la terminal.
-                    <span class="command-highlight">'cd [directorio]'</span>: Cambia de directorio.
-                    <span class="command-highlight">'ll'</span> o <span class="command-highlight">'dir'</span>: Lista el contenido del directorio.
-                    <span class="command-highlight">'soren_proyectos'</span>: Lista los proyectos documentados.
-                    <span class="command-highlight">'soren_chat [tu mensaje]'</span>: Inicia una conversación sobre cualquiera de mis proyectos o habilidades!
-                    </pre>`;
+       '-h': async () => {
+             // Eliminamos soren_proyectos de la ayuda
+             const helpText = `<pre>Comandos disponibles:
+<span class="command-highlight">'cls'</span>: Limpia la consola.
+<span class="command-highlight">'exit'</span>: Cierra la terminal.
+<span class="command-highlight">'cd [directorio]'</span>: Cambia de directorio.
+<span class="command-highlight">'ll'</span> o <span class="command-highlight">'dir'</span>: Lista el contenido.
+<span class="command-highlight">'soren_chat'</span>: Hablar con Søren (IA).
+<span class="command-highlight">'soren_chat [proyecto]'</span>: Hablar sobre un proyecto específico.
+</pre>`;
             addSystemMessage(helpText);
         },
+
 
         cls: async () => {
             history = [];
@@ -41,40 +44,39 @@
             addSystemMessage("Escribe '-h' para ver los comandos disponibles.");
         },
 
-ll: async () => {
-        const pathParts = $currentPath.split('\\').filter((p) => p && p !== 'C:');
+        ll: async () => {
+                const pathParts = $currentPath.split('\\').filter((p) => p && p !== 'C:');
 
-        // Navegar hasta el directorio actual en el file system
-        let currentLevel: FileSystemNode[] = fileSystemData.children; // Iniciar con los hijos del root
+                // Navegar hasta el directorio actual en el file system
+                let currentLevel: FileSystemNode[] = fileSystemData.children; // Iniciar con los hijos del root
 
-        for (const part of pathParts) {
-            const foundDir = currentLevel.find(
-                (node) => node.name.toLowerCase() === part.toLowerCase() && node.type === 'folder'
-            );
+                for (const part of pathParts) {
+                    const foundDir = currentLevel.find(
+                        (node) => node.name.toLowerCase() === part.toLowerCase() && node.type === 'folder'
+                    );
 
-            // --- INICIO DE LA CORRECCIÓN ---
-            if (foundDir && foundDir.type === 'folder') {
-                // Asignamos la propiedad 'children' de la carpeta encontrada
-                currentLevel = foundDir.children;
-            } else {
-                addErrorMessage(`Directorio no encontrado: ${part}`);
-                return; // Salir si una parte de la ruta no es válida
-            }
-            // --- FIN DE LA CORRECCIÓN ---
-        }
+                    if (foundDir && foundDir.type === 'folder') {
+                        // Asignamos la propiedad 'children' de la carpeta encontrada
+                        currentLevel = foundDir.children;
+                    } else {
+                        addErrorMessage(`Directorio no encontrado: ${part}`);
+                        return; // Salir si una parte de la ruta no es válida
+                    }
+                }
 
-        // Una vez en el directorio correcto, listar su contenido
-        if (currentLevel.length === 0) {
-            addSystemMessage('Directorio vacío.');
-        } else {
-            const listing = currentLevel
-                .map((node) => {
-                    return node.type === 'folder' ? `[${node.name}]` : node.name;
-                })
-                .join('\n');
-            addSystemMessage(listing);
-        }
-    },
+                // Una vez en el directorio correcto, listar su contenido
+                if (currentLevel.length === 0) {
+                    addSystemMessage('Directorio vacío.');
+                } else {
+                    const listing = currentLevel
+                        .map((node) => {
+                            return node.type === 'folder' ? `[${node.name}]` : node.name;
+                        })
+                        .join('\n');
+                    addSystemMessage(listing);
+                }
+        },
+        
         exit: async () => {
             handleClose();
         },
@@ -100,23 +102,23 @@ ll: async () => {
             parts.push(targetDir);
             currentPath.set(parts.join('\\') + '\\');
         },
-     
 
-        soren_chat: async (args) => {
+        ssoren_chat: async (args) => {
             isChatModeActive = true;
             const project = args[0];
             if (project) {
                 chatProjectContext = project;
                 addSystemMessage(
-                    `Modo de chat activado con contexto del proyecto: <span class="command-highlight">'${project}'</span>.`
+                    `Modo de chat activado con contexto: <span class="command-highlight">'${project}'</span>.`
                 );
             } else {
                 chatProjectContext = null;
                 addSystemMessage(
-                    'Modo de chat general activado. Ahora puedes conversar con Søren sobre Brian.'
+                    'Modo de chat general activado. Ahora puedes conversar con Søren.'
                 );
             }
         },
+
         soren_proyectos: async () => {
             try {
                 const res = await fetch('/api/chat', { method: 'GET' });
@@ -186,64 +188,43 @@ ll: async () => {
     }
 
     async function handleAIChat(prompt: string) {
+        // Creamos el item de respuesta vacío
         const responseIndex = history.length;
-        addHistoryItem({ type: 'response', text: '' });
-
+        addHistoryItem({ type: 'response', text: '' }); 
+        
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     prompt: prompt,
-                    project: chatProjectContext
+                    project: chatProjectContext || undefined
                 })
             });
 
-            if (!response.ok) {
-                // Si la respuesta no es OK, es un error JSON del backend.
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Error desconocido del servidor');
+            if (!response.ok || !response.body) {
+                throw new Error('Error en la comunicación con Søren.');
             }
 
-            if (!response.body) {
-                // Si la respuesta es OK pero no hay cuerpo, es un error inesperado.
-                throw new Error('La respuesta del servidor estaba vacía.');
-            }
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
-            let buffer = '';
-
+            
             while (true) {
                 const { done, value } = await reader.read();
-                if (done) {
-                    break;
-                }
+                if (done) break;
 
-                // Decodificar el chunk y añadirlo al buffer
-                buffer += decoder.decode(value, { stream: true });
+                const chunk = decoder.decode(value, { stream: true });
                 
-                // Procesar todas las líneas completas en el buffer
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || ''; // Guardar la última línea (puede estar incompleta)
-
-                for (const line of lines) {
-                    if (line.trim() === '') continue;
-                    try {
-                        const parsed = JSON.parse(line);
-                        if (parsed.response) {
-                            // Añadir solo el texto de la respuesta al historial
-                            history[responseIndex].text += parsed.response;
-                        }
-                    } catch (e) {
-                        console.error('Error parseando JSON del stream:', line);
-                    }
-                }
-                history = [...history];
+                //  Actualizamos el historial letra por letra (o bloque por bloque)
+                // Svelte reactivo: asignamos a la posición específica
+                history[responseIndex].text += chunk;
+                
+                // Forzamos un scroll hacia abajo para seguir el texto
                 scrollToBottom();
             }
+
         } catch (err: any) {
-            history[responseIndex] = { type: 'error', text: err.message || 'No se pudo conectar con el servidor.' };
-            history = [...history];
+            history[responseIndex] = { type: 'error', text: err.message || 'Error desconocido.' };
         }
     }
 

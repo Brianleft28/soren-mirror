@@ -1,56 +1,79 @@
 # Portfolio Interactivo v2 (Søren Público)
 
-Este proyecto es la cara visible del monorepo: una aplicación web construida con **SvelteKit** que funciona como el portfolio personal de Brian Benegas. Su característica principal es la integración de **"Søren Público"**, un asistente de IA que responde preguntas sobre el perfil y los proyectos del autor.
+Este proyecto es la cara visible del monorepo: una aplicación web construida con **SvelteKit** que funciona como el portfolio personal de Brian Benegas. Su característica principal es la integración de **"Søren Público"**, un asistente de IA que responde preguntas sobre el perfil, la experiencia y los proyectos del autor.
 
-El asistente se ejecuta de forma local y privada, utilizando un contenedor Docker con **Ollama** para garantizar que no haya dependencia de APIs externas para su función principal.
+Originalmente diseñado para correr con modelos locales, la versión actual ha evolucionado para utilizar la potencia de **Google Gemini 1.5 Flash**, garantizando respuestas rápidas y baja latencia directamente desde la terminal web, utilizando un archivo de memoria unificado.
 
 ### Stack Tecnológico
 
 ![SvelteKit](https://img.shields.io/badge/SvelteKit-FF3E00?style=for-the-badge&logo=svelte&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=for-the-badge&logo=typescript&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
-![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=ollama&logoColor=white)
+![Google Gemini](https://img.shields.io/badge/Google%20Gemini-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-7952B3?style=for-the-badge&logo=bootstrap&logoColor=white)
 
 ---
 
 ## 🎯 Arquitectura y Flujo de Datos del Chat
 
-Este servicio (`portfolio`) es el frontend del proyecto, pero gracias a SvelteKit, también tiene su propio backend para manejar la lógica de la API. El flujo de una consulta al chat es el siguiente:
+Este servicio (`portfolio`) actúa como interfaz y orquestador. El flujo de una consulta en la terminal es el siguiente:
 
-1.  **Frontend (Componente Svelte)**: El usuario envía un mensaje desde la interfaz web. La UI hace una petición `POST` a su propio backend en `/api/chat`.
+1.  **Terminal Web (Frontend)**: 
+    * El usuario interactúa mediante comandos o chat libre.
+    * La UI gestiona el sistema de archivos virtual y el estado del contexto.
+    * Cuando se envía un mensaje, hace una petición `POST` a `/api/chat`.
 
-2.  **Backend (API Route - `src/routes/api/chat/+server.ts`)**: Este es el orquestador de la respuesta.
-    *   Recibe el mensaje del usuario.
-    *   Carga la personalidad base desde `../../docs/vision/public_persona.md`.
-    *   Dependiendo de la pregunta, carga contexto adicional desde los archivos en `../../docs/context/` o `../../docs/proyectos/`.
-    *   Construye un *System Prompt* completo y detallado.
-    *   Realiza una llamada `fetch` al servicio de Ollama (`soren_brain`), que se ejecuta en otro contenedor pero dentro de la misma red de Docker.
+2.  **Backend (SvelteKit Server Route)**: 
+    * Recibe el mensaje del usuario.
+    * Carga la memoria base estática desde `static/data/public_memory.md`.
+    * Construye un *System Prompt* inyectando la memoria y el contexto de la sesión.
+    * Conecta con la **API de Google Gemini (1.5 Flash)** para generar la respuesta.
 
-3.  **Cerebro IA (`ollama` service)**: El contenedor de Ollama recibe la petición, procesa el prompt con el modelo `dolphin-mistral` y genera una respuesta.
+3.  **Respuesta**: 
+    * El texto generado se envía de vuelta al frontend y se renderiza en la terminal simulando una salida de consola.
 
-4.  **Respuesta al Usuario**: La respuesta viaja de vuelta a través del backend de SvelteKit hasta la interfaz de usuario, donde se muestra al usuario.
+---
 
-Este diseño permite que el portfolio sea una aplicación autocontenida que consume la inteligencia del "cerebro" local, manteniendo la separación de responsabilidades.
+## 💻 Comandos de la Terminal
+
+La terminal interactiva es la forma principal de navegación. Los proyectos ahora se exploran como si fueran directorios en un sistema real:
+
+| Comando | Descripción |
+| :--- | :--- |
+| `help` o `-h` | Muestra la lista de comandos disponibles. |
+| `ll` / `dir` | Lista el contenido del directorio actual. Úsalo para ver qué proyectos existen. |
+| `cd [dir]` | Navegación entre directorios (ej: `cd portfolio`). |
+| `soren_chat` | Activa el modo chat general con el asistente. |
+| `soren_chat [proyecto]` | Activa el modo chat **con contexto**, enfocando las respuestas en un proyecto específico (ej: `soren_chat soren-mirror`). |
+| `cls` | Limpia la pantalla y reinicia el contexto del chat. |
 
 ---
 
 ## 🚀 Desarrollo Local
 
-Para levantar este servicio junto con su dependencia (Ollama):
+Para levantar este servicio:
 
-1.  **Asegúrate de estar en la raíz del monorepo**, no dentro del directorio `portfolio`.
-2.  **Configura las variables de entorno** creando un archivo `.env` en la raíz, basado en `.env.example`.
-3.  **Ejecuta Docker Compose:**
+1.  **Configura las variables de entorno**:
+    Crea un archivo `.env` en la raíz con tu API Key de Gemini:
+    ```env
+    GEMINI_API_KEY=tu_api_key_aqui
+    ```
+
+2.  **Instala dependencias y corre el servidor**:
+    ```bash
+    npm install
+    npm run dev
+    ```
+
+3.  **Docker (Opcional)**:
+    Si prefieres correrlo contenerizado como en producción:
     ```bash
     docker-compose up -d --build
     ```
-4.  **Accede a la aplicación:** El portfolio estará disponible en `http://localhost:3000`.
 
 ---
 
 ## 📄 Documentación Profunda
 
-Este `README.md` es un resumen técnico. Para una visión completa del proyecto, incluyendo decisiones de arquitectura (ADRs) y el manifiesto completo, consulta la documentación en el directorio `docs/` del repositorio principal.
+Para una visión completa de la arquitectura del monorepo, decisiones de diseño y el manifiesto de los agentes, consulta la documentación en el directorio `docs/` del repositorio principal o pregunta directamente a Søren en la terminal.
 
--   **[Ver Documentación del Proyecto Portfolio](../../docs/proyectos/portfolio.md) 
-**// filepath: portfolio/README.md **
+-   **[Ver Documentación del Proyecto Portfolio](../../docs/proyectos/portfolio.md)**

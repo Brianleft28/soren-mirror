@@ -1,69 +1,82 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 
-// Importamos el archivo de memoria como texto crudo usando Vite
-// Ajusta la cantidad de '../' según la estructura final, esto asume src/routes/api/chat/
+// Importamos la memoria
 import memoryContent from '../../../../static/data/public_memory.md?raw';
 
 const MODEL_NAME = 'gemini-1.5-flash';
-const LIMIT_PER_IP = 15; 
 
-const interactions: Record<string, number> = {};
-
-export const POST: RequestHandler = async ({ request, getClientAddress }) => {
-    // 1Rate Limiting Simple
-    const clientIp = getClientAddress();
-    const currentUsage = interactions[clientIp] || 0;
-
-    if (currentUsage >= LIMIT_PER_IP) {
-        return json({
-            response: "🛑 [SISTEMA] Límite de consultas alcanzado para tu IP. Para continuar la charla, sentite libre de contactarme directamente."
-        });
-    }
-
+export const POST: RequestHandler = async ({ request }) => {
     try {
         const apiKey = env.GEMINI_API_KEY;
         if (!apiKey) {
-            console.error("❌ FATAL: No se encontró GEMINI_API_KEY en las variables de entorno.");
-            return json({ response: "Error del sistema: Credenciales de IA no configuradas." });
+            return new Response("Error: API Key no configurada.", { status: 500 });
         }
 
-        const { prompt } = await request.json();
+        // 1. Obtenemos prompt y project (ahora sí lo usamos)
+        const { prompt, project } = await request.json();
 
         if (!prompt) {
-             return json({ response: "Error: No se recibió ningún mensaje." });
+             return new Response("Error: Mensaje vacío.", { status: 400 });
         }
 
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-        // Inyectamos toda la memoria estática en cada petición (Stateless)
+        // 2. Construcción del Prompt con Contexto
+        let contextInstruction = "";
+        if (project) {
+            contextInstruction = `
+            CONTEXTO ESPECÍFICO:
+            El usuario está preguntando específicamente sobre el proyecto: "${project}".
+            Usa tu conocimiento base para enfocar la respuesta en este proyecto.
+            `;
+        }
+
         const fullPrompt = `
         ${memoryContent}
 
         ---
+        ${contextInstruction}
+
         CONTEXTO DE LA SESIÓN:
-        El usuario es un visitante del portfolio (posible reclutador o colega).
+        El usuario es un visitante del portfolio en una terminal interactiva.
+        Responde de forma concisa, técnica pero amable. Estilo "Cyberpunk/Hacker".
+        No uses Markdown complejo (negritas o encabezados), usa texto plano formateado para terminal.
 
         MENSAJE DEL USUARIO:
         "${prompt}"
 
-        TU RESPUESTA (Responde como Søren, mantén el formato texto plano para terminal):
+        TU RESPUESTA (Stream):
         `;
 
-        // 3. Generación
-        const result = await model.generateContent(fullPrompt);
-        const responseText = result.response.text();
+        // 3. Generación en Stream
+        const result = await model.generateContentStream(fullPrompt);
 
-        // Actualizar contador de uso
-        interactions[clientIp] = currentUsage + 1;
+        // 4. Creamos un ReadableStream para enviar los trozos (chunks) al frontend
+        const stream = new ReadableStream({
+            async start(controller) {
+                for await (const chunk of result.stream) {
+                    const text = chunk.text();
+                    if (text) {
+                        controller.enqueue(text); // Enviamos el fragmento de texto
+                    }
+                }
+                controller.close();
+            }
+        });
 
-        return json({ response: responseText });
+        // Devolvemos la respuesta como stream de texto
+        return new Response(stream, {
+            headers: {
+                'content-type': 'text/plain; charset=utf-8',
+                'Transfer-Encoding': 'chunked' // Importante para streaming
+            }
+        });
 
     } catch (error) {
         console.error('[GEMINI API ERROR]', error);
-        return json({ response: "Error de conexión con el núcleo cognitivo. Por favor, intenta nuevamente en unos segundos." });
+        return new Response("Error de conexión con el núcleo cognitivo.", { status: 500 });
     }
 };
