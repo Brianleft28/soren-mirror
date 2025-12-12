@@ -22,11 +22,18 @@
             window.removeEventListener('keydown', handleKeyDown);
         };
     });
+
+    const handleAiButtonClick = () => {
+        isTerminalVisible.update(visible => {
+            const newVisible = !visible;
+            console.log(`[DEBUG] Terminal visibility toggled via button: ${newVisible}`);
+            return newVisible;
+        });
+    };
 </script>
 
 <svelte:head>
     <title>brianbenegas.js</title>
-
     <meta
         name="description"
         content="Explora el portfolio de Brian Benegas, un desarrollador de software especializado en la creación de aplicaciones web robustas y escalables con tecnologías como SvelteKit, Nest.js y Docker."
@@ -48,22 +55,29 @@
         name="twitter:description"
         content="Explora los proyectos y la experiencia de Brian Benegas."
     />
-    <meta name="twitter:image" content="https://brianleft.com/social-preview.png" />
 </svelte:head>
+
 
 <main class="container-fluid font-monospace">
     <slot />
 <div class="fixed-bottom p-3 d-flex justify-content-end" style="pointer-events: none;">
     <button 
-        class="btn btn-dark border border-success text-success shadow-lg" 
+        class="btn ai-button btn-dark border border-success text-success shadow-lg" 
         style="pointer-events: auto; background-color: rgba(0,0,0,0.8);"
-        onclick={() => isTerminalVisible.set(true)} >
+        on:click={handleAiButtonClick}
+    >
         <span class="me-2">⚡</span> Hablar con Søren (AI)
     </button>
 </div>
 </main>
 
-<!-- La terminal se renderiza aquí, fuera del <main> para que sea un overlay global -->
 {#if $isTerminalVisible}
     <Terminal />
 {/if}
+
+<style>
+    .ai-button {
+        z-index: 1050;
+        bottom: 20px;
+    }
+</style>

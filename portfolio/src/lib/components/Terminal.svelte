@@ -10,136 +10,141 @@
         promptIndicator?: string;
     };
 
-    let history: HistoryItem[] = [
-        { type: 'system', text: "Bienvenido a la terminal de Brian Benegas. Escribe '-h' para ver los comandos." }
-    ];
+    let history: HistoryItem[] = ['"Bienvenido a la terminal de Brian Benegas. Escribe \'-h\' para ver los comandos."'].map(text => ({ type: 'system', text }));
     let currentPrompt = '';
+    let promptHistory: string[] = [];
+    let historyIndex = -1;
     let isLoading = false;
     let inputElement: HTMLInputElement;
     let terminalElement: HTMLDivElement;
     let isChatModeActive = false;
-    let chatProjectContext: string | null = null; 
+
+    onMount(() => {
+        const savedHistory = localStorage.getItem('terminal-history');
+        const savedChatMode = localStorage.getItem('terminal-chat-mode');
+
+        if (savedHistory) {
+            history = JSON.parse(savedHistory);
+            promptHistory = history
+                .filter((item) => item.type === 'prompt')
+                .map((item) => item.text);
+            historyIndex = promptHistory.length;
+        } else {
+            addSystemMessage(
+                "Bienvenido a la terminal de Brian Benegas. Escribe '-h' para ver los comandos."
+            );
+        }
+
+        if (savedChatMode === 'true') {
+            isChatModeActive = true;
+        }
+
+        inputElement?.focus();
+    });
+
+    $: if (typeof window !== 'undefined') {
+        localStorage.setItem('terminal-history', JSON.stringify(history));
+        localStorage.setItem('terminal-chat-mode', String(isChatModeActive));
+    }
 
     const commands: Record<string, (args: string[]) => Promise<void>> = {
 
-       '-h': async () => {
-             // Eliminamos soren_proyectos de la ayuda
-             const helpText = `<pre>Comandos disponibles:
+      '-h': async () => {
+        const helpText = `<pre>Comandos disponibles:
+<span class="command-highlight">'cd'</span>: Cambia de directorio. Usa '..' para subir un nivel.
 <span class="command-highlight">'cls'</span>: Limpia la consola.
+<span class="command-highlight">'ll'</span>: Ver archivos/proyectos.
 <span class="command-highlight">'exit'</span>: Cierra la terminal.
-<span class="command-highlight">'cd [directorio]'</span>: Cambia de directorio.
-<span class="command-highlight">'ll'</span> o <span class="command-highlight">'dir'</span>: Lista el contenido.
-<span class="command-highlight">'soren_chat'</span>: Hablar con Søren (IA).
-<span class="command-highlight">'soren_chat [proyecto]'</span>: Hablar sobre un proyecto específico.
+<span class="command-highlight">'soren_chat'</span>: Conversa con mi asistente de IA, sabe todos sobre mis cualidades y proyectos.
 </pre>`;
-            addSystemMessage(helpText);
-        },
+        addSystemMessage(helpText);
+    },
 
+    cls: async () => {
+        history = [];
+        promptHistory = [];
+        historyIndex = -1;
+        isChatModeActive = false;
+        // Limpiamos también el localStorage
+        if (typeof window !== 'undefined') {
+            localStorage.removeItem('terminal-history');
+            localStorage.removeItem('terminal-chat-mode');
+        }
+        currentPath.set('C:\\');
+        addSystemMessage("Utiliza '-h' para ver los comandos disponibles.");
+    },
 
-        cls: async () => {
-            history = [];
-            isChatModeActive = false;
-            currentPath.set('C:\\');
-            chatProjectContext = null;
-            addSystemMessage("Escribe '-h' para ver los comandos disponibles.");
-        },
+    ll: async () => {
+        const pathParts = $currentPath.split('\\').filter((p) => p && p !== 'C:');
+        let currentLevel: FileSystemNode[] = fileSystemData.children;
 
-        ll: async () => {
-                const pathParts = $currentPath.split('\\').filter((p) => p && p !== 'C:');
-
-                // Navegar hasta el directorio actual en el file system
-                let currentLevel: FileSystemNode[] = fileSystemData.children; // Iniciar con los hijos del root
-
-                for (const part of pathParts) {
-                    const foundDir = currentLevel.find(
-                        (node) => node.name.toLowerCase() === part.toLowerCase() && node.type === 'folder'
-                    );
-
-                    if (foundDir && foundDir.type === 'folder') {
-                        // Asignamos la propiedad 'children' de la carpeta encontrada
-                        currentLevel = foundDir.children;
-                    } else {
-                        addErrorMessage(`Directorio no encontrado: ${part}`);
-                        return; // Salir si una parte de la ruta no es válida
-                    }
-                }
-
-                // Una vez en el directorio correcto, listar su contenido
-                if (currentLevel.length === 0) {
-                    addSystemMessage('Directorio vacío.');
-                } else {
-                    const listing = currentLevel
-                        .map((node) => {
-                            return node.type === 'folder' ? `[${node.name}]` : node.name;
-                        })
-                        .join('\n');
-                    addSystemMessage(listing);
-                }
-        },
-        
-        exit: async () => {
-            handleClose();
-        },
-
-        cd: async (args) => {
-            const targetDir = args[0];
-            if (!targetDir) {
-                addSystemMessage(`Ruta actual: ${$currentPath}`);
-                return;
-            }
-            if (targetDir === '..') {
-                const parts = $currentPath.split('\\').filter(p => p);
-                if (parts.length > 1) {
-                    parts.pop();
-                    currentPath.set(parts.join('\\') + '\\');
-                } else {
-                    currentPath.set('C:\\');
-                }
-                return;
-            }
-            // añadir lógica para validar si el directorio existe en file-system.ts
-            const parts = $currentPath.split('\\').filter(p => p);
-            parts.push(targetDir);
-            currentPath.set(parts.join('\\') + '\\');
-        },
-
-        ssoren_chat: async (args) => {
-            isChatModeActive = true;
-            const project = args[0];
-            if (project) {
-                chatProjectContext = project;
-                addSystemMessage(
-                    `Modo de chat activado con contexto: <span class="command-highlight">'${project}'</span>.`
-                );
+        for (const part of pathParts) {
+            const foundDir = currentLevel.find(
+                (node) => node.name.toLowerCase() === part.toLowerCase() && node.type === 'folder'
+            );
+            if (foundDir && foundDir.type === 'folder') {
+                currentLevel = foundDir.children;
             } else {
-                chatProjectContext = null;
-                addSystemMessage(
-                    'Modo de chat general activado. Ahora puedes conversar con Søren.'
-                );
-            }
-        },
-
-        soren_proyectos: async () => {
-            try {
-                const res = await fetch('/api/chat', { method: 'GET' });
-                if (!res.ok) throw new Error('No se pudo obtener la lista de proyectos.');
-                const { proyectos } = await res.json();
-
-                if (proyectos && proyectos.length > 0) {
-                    const projectList = proyectos.map((p: string) => `- ${p}`).join('\n');
-                    addSystemMessage(
-                        `Proyectos disponibles para discutir:\n${projectList}\n\nUsa 'soren_chat [nombre_del_proyecto]' para hablar de uno.`
-                    );
-                } else {
-                    addSystemMessage('No se encontraron proyectos documentados.');
-                }
-            } catch (error: any) {
-                addErrorMessage(error.message);
+                addErrorMessage(`Directorio no encontrado: ${part}`);
+                return;
             }
         }
-    };
- function addHistoryItem(item: HistoryItem) {
+
+        if (currentLevel.length === 0) {
+            addSystemMessage('Directorio vacío.');
+        } else {
+            const listing = currentLevel
+                .map((node) => node.type === 'folder' ? `[${node.name}]` : node.name)
+                .join('\n');
+            addSystemMessage(listing);
+        }
+    },
+    
+    exit: async () => { handleClose(); },
+
+    cd: async (args) => {
+        const targetDir = args[0];
+        if (!targetDir) {
+            addSystemMessage(`Ruta actual: ${$currentPath}`);
+            return;
+        }
+        if (targetDir === '..') {
+            const parts = $currentPath.split('\\').filter(p => p);
+            if (parts.length > 1) {
+                parts.pop();
+                currentPath.set(parts.join('\\') + '\\');
+            } else {
+                currentPath.set('C:\\');
+            }
+            return;
+        }
+        const parts = $currentPath.split('\\').filter(p => p);
+        parts.push(targetDir);
+        currentPath.set(parts.join('\\') + '\\');
+    },
+
+       soren_chat: async (args) => {
+        const initialPrompt = args.join(' ');
+        if (!initialPrompt) {
+            isChatModeActive = true;
+            addSystemMessage(
+                'Modo de chat general activado. Ahora podés conversar con Søren.'
+            );
+            return;
+        }
+        
+        // Si hay un mensaje, activamos el modo y lo enviamos directamente
+        isChatModeActive = true;
+        await handleAIChat(initialPrompt);
+    }
+};
+    
+    function addHistoryItem(item: HistoryItem) {
         history = [...history, item];
+        if (item.type === 'prompt') {
+            promptHistory = [...promptHistory, item.text];
+            historyIndex = promptHistory.length;
+        }
         setTimeout(() => {
             const container = terminalElement.querySelector('.terminal-output');
             container?.scrollTo(0, container.scrollHeight);
@@ -153,93 +158,113 @@
     function addErrorMessage(text: string) {
         addHistoryItem({ type: 'error', text });
     }
-
-    onMount(() => {
-        inputElement?.focus();
-        terminalElement.focus();
-    });
+    
 
     function handleClose() {
         isChatModeActive = false;
-        chatProjectContext = null;
         isTerminalVisible.set(false);
     }
+
     async function handleSubmit() {
-        if (isLoading || !currentPrompt.trim()) return;
+    if (isLoading || !currentPrompt.trim()) return;
 
-        const promptText = currentPrompt;
-        addHistoryItem({ type: 'prompt', text: promptText, promptIndicator: promptIndicator }); // Usamos el valor reactivo
-        currentPrompt = '';
-        isLoading = true;
+    const promptText = currentPrompt;
+    // Pasamos el promptIndicator actual para que se guarde con el historial
+    addHistoryItem({ type: 'prompt', text: promptText, promptIndicator });
+    currentPrompt = '';
+    isLoading = true;
 
-        const [command, ...args] = promptText.toLowerCase().trim().split(' ');
-        const commandHandler = commands[command];
+    await tick();
+    terminalElement.scrollTop = terminalElement.scrollHeight;
 
-        if (commandHandler) {
-            await commandHandler(args);
-        } else if (isChatModeActive) {
-            await handleAIChat(promptText);
-        } else {
-            addErrorMessage(`Comando no reconocido: '${command}'. Escribe '-h' para ver la lista.`);
+    const [command, ...args] = promptText.toLowerCase().trim().split(' ');
+    const commandHandler = commands[command];
+
+    if (commandHandler && command !== 'soren_chat') {
+        await commandHandler(args);
+    } else if (isChatModeActive || command === 'soren_chat') {
+        const promptForAI = command === 'soren_chat' ? args.join(' ') : promptText;
+        if (promptForAI) {
+            await handleAIChat(promptForAI);
+        } else if (command === 'soren_chat') {
+            isChatModeActive = true;
+            addSystemMessage('Modo de chat general activado. Ahora podés conversar con Søren.');
         }
-
-        isLoading = false;
-        setTimeout(() => inputElement?.focus(), 0);
+    } else {
+        addErrorMessage(`Comando no reconocido: '${command}'. Escribe '-h' para ver la lista.`);
     }
+    isLoading = false;
+    await tick();
+    inputElement.focus();
+    terminalElement.scrollTop = terminalElement.scrollHeight;
+}
 
     async function handleAIChat(prompt: string) {
-        // Creamos el item de respuesta vacío
-        const responseIndex = history.length;
-        addHistoryItem({ type: 'response', text: '' }); 
-        
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    prompt: prompt,
-                    project: chatProjectContext || undefined
-                })
-            });
+    const responseIndex = history.length;
+    addHistoryItem({ type: 'response', text: '' });
 
-            if (!response.ok || !response.body) {
-                throw new Error('Error en la comunicación con Søren.');
-            }
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt: prompt
+            })
+        });
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+        if (!response.ok || !response.body) {
+            throw new Error('La respuesta de la API no fue válida.');
+        }
 
-                const chunk = decoder.decode(value, { stream: true });
-                
-                //  Actualizamos el historial letra por letra (o bloque por bloque)
-                // Svelte reactivo: asignamos a la posición específica
-                history[responseIndex].text += chunk;
-                
-                // Forzamos un scroll hacia abajo para seguir el texto
-                scrollToBottom();
-            }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-        } catch (err: any) {
-            history[responseIndex] = { type: 'error', text: err.message || 'Error desconocido.' };
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true }).replace(/\n{3,}/g, '\n\n').trim();
+            history[responseIndex].text += chunk;
+            history = history;
+            scrollToBottom();
+        }
+    } catch (error) {
+        console.error('Error en el chat con IA:', error);
+        history[responseIndex].text = 'Error: No se pudo conectar con el núcleo cognitivo.';
+        history = history;
+    }
+}
+
+
+function handleKeyDown(event: KeyboardEvent) {
+    if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (historyIndex > 0) {
+            historyIndex--;
+            currentPrompt = promptHistory[historyIndex];
+        }
+    } else if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        if (historyIndex < promptHistory.length - 1) {
+            historyIndex++;
+            currentPrompt = promptHistory[historyIndex];
+        } else {
+            // Si llegamos al final, limpiamos el prompt
+            historyIndex = promptHistory.length;
+            currentPrompt = '';
         }
     }
+}
 
-    function scrollToBottom() {
-        setTimeout(() => {
-            const container = terminalElement.querySelector('.terminal-output');
-            if (container) {
-                container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-            }
-        }, 0);
-    }
+function scrollToBottom() {
+    tick().then(() => {
+        terminalElement?.querySelector('.terminal-output')?.scrollTo(0, terminalElement.scrollHeight);
+    });
+}
 
-      $: promptIndicator = isChatModeActive
-        ? `Søren-Chat${chatProjectContext ? `(${chatProjectContext})` : ''}>`
-        : $currentPath + '>'; // Usamos el valor del store
+$: promptIndicator = isChatModeActive
+? `Søren-Chat>` 
+: $currentPath + '>';
 </script>
 
 
@@ -255,8 +280,8 @@
         if (e.key === 'Escape') handleClose();
     }}
 >
-    <div class="d-flex justify-content-end p-2">
-        <button class="btn-close btn-close-white" on:click={handleClose} aria-label="Cerrar Terminal"></button>
+    <div class="d-flex justify-content-end me-2 mt-2 p-2">
+        <button class="btn-close btn-white" on:click={handleClose} aria-label="Cerrar Terminal"></button>
     </div>
 
     <div
@@ -268,31 +293,27 @@
             if (e.key === 'Enter' || e.key === ' ') inputElement?.focus();
         }}
     >
-        <div class="terminal-output flex-grow-1 overflow-y-auto pe-2">
+         <div class="terminal-output flex-grow-1 overflow-y-auto pe-2">
             {#each history as item, i (i)}
                 <div class="line mb-2">
                     {#if item.type === 'prompt'}
-                        <span class="prompt-user">{history[i - 1]?.type === 'prompt' && isChatModeActive ? `Søren-Chat${chatProjectContext ? `(${chatProjectContext})` : ''}>` : 'C:\\>'}</span>
+                        <span class="prompt-user">{promptIndicator}</span>
                         <span>{item.text}</span>
                     {:else if item.type === 'response'}
                         <div>
                             <span class="prompt-soren">Søren:</span>
-                            <p class="d-inline">{item.text}</p>
+                            <span class="ms-1">{@html item.text}</span>
                         </div>
                     {:else if item.type === 'error'}
-                        <div>
-                            <span class="prompt-error">Error:</span>
-                            <p class="d-inline">{item.text}</p>
-                        </div>
-                    {:else}
-                        <div class="system-message mb-0">{@html item.text}</div>
+                        <p class="prompt-error">{item.text}</p>
+                    {:else if item.type === 'system'}
+                        <div class="system-message">{@html item.text}</div>
                     {/if}
                 </div>
             {/each}
             {#if isLoading}
-                <div class="line">
-                    <span class="prompt-soren">Søren:</span>
-                    <span class="thinking">...</span>
+                <div class="line mb-2">
+                    <span class="thinking ms-1">...</span>
                 </div>
             {/if}
         </div>

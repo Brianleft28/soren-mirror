@@ -5,7 +5,7 @@ import { env } from '$env/dynamic/private';
 // Importamos la memoria
 import memoryContent from '../../../../static/data/public_memory.md?raw';
 
-const MODEL_NAME = 'gemini-1.5-flash';
+const MODEL_NAME = 'gemini-2.5-pro';
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
@@ -14,8 +14,8 @@ export const POST: RequestHandler = async ({ request }) => {
             return new Response("Error: API Key no configurada.", { status: 500 });
         }
 
-        // 1. Obtenemos prompt y project (ahora sí lo usamos)
-        const { prompt, project } = await request.json();
+        const { prompt } = await request.json();
+        console.log(`[API] Prompt recibido: "${prompt}"`); // LOG
 
         if (!prompt) {
              return new Response("Error: Mensaje vacío.", { status: 400 });
@@ -24,35 +24,26 @@ export const POST: RequestHandler = async ({ request }) => {
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
-        // 2. Construcción del Prompt con Contexto
-        let contextInstruction = "";
-        if (project) {
-            contextInstruction = `
-            CONTEXTO ESPECÍFICO:
-            El usuario está preguntando específicamente sobre el proyecto: "${project}".
-            Usa tu conocimiento base para enfocar la respuesta en este proyecto.
-            `;
-        }
-
         const fullPrompt = `
         ${memoryContent}
 
         ---
-        ${contextInstruction}
-
         CONTEXTO DE LA SESIÓN:
         El usuario es un visitante del portfolio en una terminal interactiva.
         Responde de forma concisa, técnica pero amable. Estilo "Cyberpunk/Hacker".
-        No uses Markdown complejo (negritas o encabezados), usa texto plano formateado para terminal.
+        No uses Markdown complejo, usa texto plano formateado para terminal.
+        Puedes utilizar etiquetas html por ej <span 'command-highlight'>texto</span> para resaltar. \n\n y NADA MÁS. 
 
         MENSAJE DEL USUARIO:
         "${prompt}"
 
         TU RESPUESTA (Stream):
         `;
+        console.log("[API] Enviando a Gemini..."); // LOG
 
         // 3. Generación en Stream
         const result = await model.generateContentStream(fullPrompt);
+        console.log("[API] Respuesta recibida, comenzando stream..."); 
 
         // 4. Creamos un ReadableStream para enviar los trozos (chunks) al frontend
         const stream = new ReadableStream({
@@ -60,18 +51,19 @@ export const POST: RequestHandler = async ({ request }) => {
                 for await (const chunk of result.stream) {
                     const text = chunk.text();
                     if (text) {
+                        console.log(`[API] Recibiendo chunk: "${text}"`); 
                         controller.enqueue(text); // Enviamos el fragmento de texto
                     }
                 }
                 controller.close();
+                console.log("[API] Stream finalizado."); 
             }
         });
 
-        // Devolvemos la respuesta como stream de texto
         return new Response(stream, {
             headers: {
                 'content-type': 'text/plain; charset=utf-8',
-                'Transfer-Encoding': 'chunked' // Importante para streaming
+                'Transfer-Encoding': 'chunked' 
             }
         });
 
