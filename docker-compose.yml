@@ -1,40 +1,4 @@
 services:
-  soren_db:
-    image: mysql:8.0
-    container_name: soren_mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3308:3306"  
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - soren_network
-
-  # CEREBRO (Ollama) - Configuración solo para CPU
-  ollama:
-    image: ollama/ollama:latest # Imagen estándar, sin :rocm
-    container_name: soren_brain
-    # SIN SECCIÓN 'devices' NI 'deploy'
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    environment:
-      - OLLAMA_HOST=0.0.0.0
-    networks:
-      - soren_network
-    restart: unless-stopped
   portfolio:
     build:
       context: ./portfolio
@@ -43,12 +7,9 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - VITE_OLLAMA_URL=http://ollama:11434/api/generate
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - HOST=0.0.0.0
-      - DATABASE_URL=mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@soren_db:3306/${MYSQL_DATABASE}
-    depends_on:
-      - soren_db
-      - ollama
     networks:
       - soren_network
 
@@ -61,23 +22,15 @@ services:
     stdin_open: true 
     tty: true        
     environment:  
-      - OLLAMA_HOST=http://ollama:11434
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - DB_HOST=soren_db
       - DB_USER=${MYSQL_USER}
       - DB_PASS=${MYSQL_PASSWORD}
       - DB_NAME=${MYSQL_DATABASE}
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-    depends_on:
-      - soren_db
-      - ollama
     networks:
       - soren_network
 
 networks:
   soren_network:
     driver: bridge
-
-volumes:
-  ollama_data:
-  mysql_data: 
