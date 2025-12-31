@@ -2,10 +2,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 
-// Importamos la memoria
+
 import memoryContent from '../../../../static/data/public_memory.md?raw';
 
-const MODEL_NAME = 'gemini-2.5-pro';
+const MODEL_NAME = 'gemini-2.5-flash';
+const MAX_INPUT_CHARS = 12000; 
 
 export const POST: RequestHandler = async ({ request }) => {
     try {
@@ -15,9 +16,10 @@ export const POST: RequestHandler = async ({ request }) => {
         }
 
         const { prompt } = await request.json();
-        console.log(`[API] Prompt recibido: "${prompt}"`); // LOG
+        const userPrompt = String(prompt ?? '').slice(0, MAX_INPUT_CHARS);
 
-        if (!prompt) {
+
+        if (!userPrompt) {
              return new Response("Error: Mensaje vacío.", { status: 400 });
         }
 
@@ -27,15 +29,16 @@ export const POST: RequestHandler = async ({ request }) => {
         const fullPrompt = `
         ${memoryContent}
 
-        ---
+            ---
         CONTEXTO DE LA SESIÓN:
+        El agente es "Soren" (guardián filosófico del portfolio). Debe defender y optimizar el portfolio, alineado con experiencia y CV sin revelar datos personales. Prioriza arquitectura, seguridad, rendimiento y coherencia con información pública/mercado.
         El usuario es un visitante del portfolio en una terminal interactiva.
         Responde de forma concisa, técnica pero amable. Estilo "Cyberpunk/Hacker".
         No uses Markdown complejo, usa texto plano formateado para terminal.
         Puedes utilizar etiquetas html por ej <span 'command-highlight'>texto</span> para resaltar. \n\n y NADA MÁS. 
 
         MENSAJE DEL USUARIO:
-        "${prompt}"
+        "${userPrompt}"
 
         TU RESPUESTA (Stream):
         `;
